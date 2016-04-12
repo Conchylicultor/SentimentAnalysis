@@ -15,7 +15,7 @@ class Node:
         
         # Node values
         self.word = # Word
-        # self.v = # Vector representation of the word (of dimention wordVectSpace)
+        # self.wordVect = # Vector representation of the word (of dimention wordVectSpace)
         self.label = # Sentiment 0-4 (Ground truth)
         
         # For backpropagation:
@@ -39,6 +39,19 @@ class Tree:
         # Garbage collector will do this for us. 
         self.root = None
 
+
+    def computeRntn(self):
+        """
+        Evaluate the vector of the complete sentence
+        """
+        return self._computeRntn(self.root)
+    
+    def _computeRntn(self, node):
+        if(node.word != None): # Leaf
+            return node.wordVect
+        else # Go deeper
+            return model.rntn(self._computeRntn(self.node.l), self._computeRntn(self.node.r))
+    
     def printTree(self):
         if(self.root != None):
             self._printTree(self.root, 0)
@@ -50,7 +63,7 @@ class Tree:
         if(node != None):
             if(node.l != None):
                 self._printTree(node.l, level+1)
-            if(node.word != None):
+            if(node.word != None): # Leaf
                 for i in range(level):
                     print('  ', end="")
                 print(node.word)

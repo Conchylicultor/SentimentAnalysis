@@ -14,6 +14,7 @@ import utils
 # Parametters
 nbEpoch = 150
 learningRate = 0.1 # TODO: Replace by AdaGrad !!
+regularisationTerm = 0.01 # Lambda
 
 def main():
     # Loading dataset
@@ -44,6 +45,7 @@ def main():
         
         # Backward pass (Compute the gradients)
         gradientWs = np.multiply(trainingSample.labelVect, (np.ones((nbClass, 1)) - softmax(Ws*rntnOutput))) * np.transpose(rntnOutput)
+        gradientWs += regularisationTerm * Ws
         
         # Update the weights
         Ws -= learningRate * gradientWs # Step in the oposite of the gradient
