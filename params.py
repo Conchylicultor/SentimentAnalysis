@@ -4,4 +4,5 @@
 Define the global parametters
 """
 
-d = 25 # World vector size
+wordVectSpace = 25 # World vector size
+nbClass = 5 # 0-4 sentiments

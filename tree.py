@@ -9,28 +9,31 @@ import params
 class Node:
     def __init__(self):
         # Tree structure
-        self.p = None
+        self.p = None # Parent (Usefull ??)
         self.l = None
         self.r = None
         
         # Node values
         self.word = # Word
-        # self.v = # Vector representation of the word
+        # self.v = # Vector representation of the word (of dimention wordVectSpace)
+        self.label = # Sentiment 0-4 (Ground truth)
         
         # For backpropagation:
         # self.sigmaCom =  
         # self.sigmaDown = 
 
 class Tree:
-    def __init__(self):
+    def __init__(self, sentence):
+    """
+    Generate the tree by parsing the given sentence.
+    Args:
+        sentence: sentence at the PTB format
+    """
         self.root = None
-        self.bottom = None # List of the based words ????? Useless ??
+        self.bottom = None # List of nodes of the based words (Useless ??)
 
     def getRoot(self):
         return self.root
-
-    def add(self, val):
-        pass
 
     def deleteTree(self):
         # Garbage collector will do this for us. 
