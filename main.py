@@ -17,7 +17,15 @@ learningRate = 0.1 # TODO: Replace by AdaGrad !!
 regularisationTerm = 0.01 # Lambda
 
 def main():
+    print("Welcome into RNTN implementation 0.1")
+    
     # Loading dataset
+    trainingSet = utils.loadDataset("trees/train.txt");
+    testingSet = utils.loadDataset("trees/test.txt");
+    #validationSet = loadDataset("trees/dev.txt");
+    
+    print("Datasets loaded !")
+    
     
     # Datatransform (normalisation, remove outliers,...)
     
@@ -37,14 +45,14 @@ def main():
         
         # TODO: Loop over the training samples
         # Select the training sample
-        trainingSample = dataset.nextSample()
+        trainingSample = trainingSet.nextSample()
         
         # Forward pass
         rntnOutput = trainingSample.tree.computeRntn() # Evaluate the model recursivelly
-        finalOutput = softmax(Ws * rntnOutput) # Use softmax classifier to get the final prediction
+        finalOutput = utils.softmax(Ws * rntnOutput) # Use softmax classifier to get the final prediction
         
         # Backward pass (Compute the gradients)
-        gradientWs = np.multiply(trainingSample.labelVect, (np.ones((nbClass, 1)) - softmax(Ws*rntnOutput))) * np.transpose(rntnOutput)
+        gradientWs = np.multiply(trainingSample.labelVect, (np.ones((nbClass, 1)) - utils.softmax(Ws*rntnOutput))) * np.transpose(rntnOutput)
         gradientWs += regularisationTerm * Ws
         
         # Update the weights
