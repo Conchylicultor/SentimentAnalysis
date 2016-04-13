@@ -17,7 +17,7 @@ class Word:
 
 class Vocab:
     def __init__(self):
-        self.dictionary = [] # List of Words
+        self.dictionary = {} # List of Words (dictionary)
     
     def addWord(self, newWord):
         """
@@ -28,15 +28,12 @@ class Vocab:
             A reference on the dictionary word
         """
         found = None
-        for word in self.dictionary: # Does the word is already present ?
-            if word.string == newWord:
-                found = word
-                break # No need to go futher
-        
-        if found == None: # If not found, we create and add it to the dictionary
-            print('Add new word', newWord) # Debug
+        if newWord in self.dictionary: # Does the word is already present ?
+            found = self.dictionary[newWord]
+        else: # If not found, we create and add it to the dictionary
+            # print('Add new word', newWord) # Debug
             found = Word(newWord)
-            self.dictionary.append(found)
+            self.dictionary[newWord] = found
         
         return found
         

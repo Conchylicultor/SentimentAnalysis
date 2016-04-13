@@ -33,7 +33,7 @@ class Tree:
             sentence: sentence at the PTB format
         """
         self.root = self._parseSentence(sentence) # Generate the tree
-        self.printTree() # Debug
+        # self.printTree() # Debug
         
     def _parseSentence(self, sentence):
         # Define the patterns

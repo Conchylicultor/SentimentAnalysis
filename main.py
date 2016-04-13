@@ -20,6 +20,7 @@ regularisationTerm = 0.01 # Lambda
 def main():
     print("Welcome into RNTN implementation 0.1")
     
+    print("Parsing dataset, creating dictionary...")
     # Dictionary initialisation
     vocabulary.initVocab()
     
