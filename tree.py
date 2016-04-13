@@ -4,8 +4,10 @@
 Class which contain a sentence on the form of a tree
 """
 import re # Regex to parse the file
+import numpy as np
 import params
 import vocabulary
+import utils
 
 class Node:
     def __init__(self):
@@ -22,6 +24,7 @@ class Node:
         self.label = -1 # Sentiment 0-4 (Ground truth)
         
         # For backpropagation:
+        self.output = None # Output of the tensor network (if not a leaf)
         # self.sigmaCom =  
         # self.sigmaDown = 
 
@@ -81,27 +84,49 @@ class Tree:
                 break
         return positionBreak
 
-    def computeRntn(self):
+    def computeRntn(self, V, W):
         """
-        Evaluate the vector of the complete sentence
+        Evaluate the vector of the complete sentence and compute all the intermediate
+        values (used to backpropagate)
         """
-        return self._computeRntn(self.root)
+        return self._computeRntn(self.root, V, W)
     
-    def _computeRntn(self, node):
+    def _computeRntn(self, node, V, W):
         if(node.word != None): # Leaf
-            return node.wordVect
+            return node.word.vect
         else: # Go deeper
-            return model.rntn(self._computeRntn(self.node.l), self._computeRntn(self.node.r))
+            # Input
+            b = self._computeRntn(node.l, V, W)
+            c = self._computeRntn(node.r, V, W)
+            
+            inputVect = np.concatenate((b, c))
+            inputVectT = np.transpose(inputVect)
+            
+            # Compute the tensor term
+            tensorResult = np.zeros(params.wordVectSpace)
+            for i in range(params.wordVectSpace):
+                tensorResult[i] = np.dot(np.dot(inputVectT, V[i]), inputVect)
+            
+            node.output = utils.actFct(tensorResult + np.dot(W,inputVect)) # Store the result for the backpropagation (What do we store in the output ?? Before or after the activation fct ??)
+            return node.output
     
+    def labelVect(self):
+        """
+        Return the ground truth of the label (Variable t on the paper).
+        """
+        t = np.zeros(params.nbClass) # Zeros everywhere
+        t[self.root.label] = 1 # Except a one on the true label
+        return t
+        
     def printTree(self):
+        """
+        Recursivelly print the tree
+        """
         if(self.root != None):
             print("Tree: ", self.root.label)
             self._printTree(self.root, 0)
 
     def _printTree(self, node, level):
-        """
-        Recursivelly print the tree
-        """
         if(node != None):
             if(node.l != None):
                 self._printTree(node.l, level+1)

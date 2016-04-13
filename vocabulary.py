@@ -13,7 +13,7 @@ class Word:
     """
     def __init__(self, word):
         self.string = word
-        self.vect = params.randInitialMaxValue * np.random.rand(params.wordVectSpace) # Initialisation to small values
+        self.vect = params.randInitMaxValueWords * np.random.rand(params.wordVectSpace) # Initialisation to small values
 
 class Vocab:
     def __init__(self):
@@ -39,13 +39,13 @@ class Vocab:
         
     def sort(self):
         """
-        Sort the dictionary alphabetically (Usefull ?)
+        Sort the dictionary alphabetically (Usefull ? < Not anymore than we use a dictionary instead of a list)
         """
         print("Nb of words", len(self.dictionary))
         pass
                 
         
-
+# Global variable which store all the words
 vocab = None
 def initVocab(): # Is initialized in main.py
     global vocab

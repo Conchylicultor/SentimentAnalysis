@@ -33,36 +33,36 @@ def main():
     
     print("Datasets loaded !")
     
-    # Datatransform (normalisation, remove outliers,...)
+    # Datatransform (normalisation, remove outliers,...) ??
     
     # Creating the model
-    # TODO: Eventually load from file (default initialize randomly)
-    #V # Tensor of the RNTN layer
-    #W = np. # Regular term of the RNTN layer
-    Ws = np.random.rand(params.nbClass, params.wordVectSpace) # Softmax classifier # TODO: Initialize randomly ??
-    #L = # Vocabulary (List of N words on vector, representation)
+    # TODO: Possibility of loading from file (default initialize randomly)
+    # TODO: What is the best possible initialisation
+    V  = np.random.rand(params.wordVectSpace, 2*params.wordVectSpace, 2*params.wordVectSpace) * params.randInitMaxValueNN # Tensor of the RNTN layer
+    W  = np.random.rand(params.wordVectSpace, 2*params.wordVectSpace)                         * params.randInitMaxValueNN # Regular term of the RNTN layer
+    Ws = np.random.rand(params.nbClass, params.wordVectSpace)                                 * params.randInitMaxValueNN # Softmax classifier
+    #L = # Vocabulary (List of N words on vector, representation) << Contained in the vocab variable
     
-    # TODO: Include the training in the cross-validation loop
+    # TODO: Include the training in the cross-validation loop (tune parametters)
     # Main loop
     for i in range(nbEpoch):
         print("Epoch: ", i)
         
         # Randomly shuffle the dataset
+        # trainingSet.shuffle()
         
-        # TODO: Loop over the training samples
-        # Select the training sample
-        trainingSample = trainingSet.nextSample()
-        
-        # Forward pass
-        rntnOutput = trainingSample.tree.computeRntn() # Evaluate the model recursivelly
-        finalOutput = utils.softmax(Ws * rntnOutput) # Use softmax classifier to get the final prediction
-        
-        # Backward pass (Compute the gradients)
-        gradientWs = np.multiply(trainingSample.labelVect, (np.ones((nbClass, 1)) - utils.softmax(Ws*rntnOutput))) * np.transpose(rntnOutput)
-        gradientWs += regularisationTerm * Ws
-        
-        # Update the weights
-        Ws -= learningRate * gradientWs # Step in the oposite of the gradient
+        # Loop over the training samples
+        for trainingSample in trainingSet: # Select next the training sample
+            # Forward pass
+            rntnOutput = trainingSample.computeRntn(V, W) # Evaluate the model recursivelly
+            finalOutput = utils.softmax(np.dot(Ws, rntnOutput)) # Use softmax classifier to get the final prediction
+            
+            # Backward pass (Compute the gradients)
+            gradientWs = np.dot(np.multiply(trainingSample.labelVect(), (np.ones(params.nbClass) - utils.softmax(np.dot(Ws, rntnOutput)))), np.transpose(rntnOutput))
+            gradientWs += regularisationTerm * Ws
+            
+            # Update the weights
+            Ws -= learningRate * gradientWs # Step in the oposite of the gradient
         
         # Compute new testing error
         

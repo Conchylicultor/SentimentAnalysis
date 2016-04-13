@@ -7,6 +7,8 @@ Some utilities functions
 import numpy as np
 import tree
 
+# Maths functions
+
 def softmax(w):
     """
     Straightforward implementation of softmax function
@@ -14,6 +16,20 @@ def softmax(w):
     e = np.exp(np.array(w))
     dist = e / np.sum(e)
     return dist
+
+def actFct(x):
+    """
+    The NN activation function (here tanh)
+    """
+    return np.tanh(x)
+
+def actFctDer(x):
+    """
+    Derivate of the activation function
+    """
+    return 1.0 - np.tanh(x)**2
+
+# Other utils functions
 
 def loadDataset(filename):
     """
