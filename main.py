@@ -10,6 +10,7 @@ import os, sys
 import numpy as np
 import params
 import utils
+import vocabulary
 
 # Parametters
 nbEpoch = 150
@@ -19,13 +20,17 @@ regularisationTerm = 0.01 # Lambda
 def main():
     print("Welcome into RNTN implementation 0.1")
     
+    # Dictionary initialisation
+    vocabulary.initVocab()
+    
     # Loading dataset
     trainingSet = utils.loadDataset("trees/train.txt");
     testingSet = utils.loadDataset("trees/test.txt");
     #validationSet = loadDataset("trees/dev.txt");
     
-    print("Datasets loaded !")
+    vocabulary.vocab.sort();
     
+    print("Datasets loaded !")
     
     # Datatransform (normalisation, remove outliers,...)
     
@@ -33,8 +38,8 @@ def main():
     # TODO: Eventually load from file (default initialize randomly)
     #V # Tensor of the RNTN layer
     #W = np. # Regular term of the RNTN layer
-    Ws = np.random.rand(nbClass, wordVectSpace) # Softmax classifier # TODO: Initialize randomly ??
-    #L = # Vocabulary
+    Ws = np.random.rand(params.nbClass, params.wordVectSpace) # Softmax classifier # TODO: Initialize randomly ??
+    #L = # Vocabulary (List of N words on vector, representation)
     
     # TODO: Include the training in the cross-validation loop
     # Main loop

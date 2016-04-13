@@ -5,6 +5,7 @@ Class which contain a sentence on the form of a tree
 """
 import re # Regex to parse the file
 import params
+import vocabulary
 
 class Node:
     def __init__(self):
@@ -14,8 +15,10 @@ class Node:
         self.r = None
         
         # Node values
-        self.word = None # Word (None by default)
-        # self.vect = # Vector representation of the word (of dimention wordVectSpace)
+        # Pointer to the vocabulary list
+        self.word = None # If the node is a leaf, contains the Word loaded from the dictionary, None otherwise
+        # self.vect = # Vector representation of the word (of dimention wordVectSpace) << Warning: already contained on the word variable !!!!!)
+        
         self.label = -1 # Sentiment 0-4 (Ground truth)
         
         # For backpropagation:
@@ -30,7 +33,7 @@ class Tree:
             sentence: sentence at the PTB format
         """
         self.root = self._parseSentence(sentence) # Generate the tree
-        # self.printTree() # Debug
+        self.printTree() # Debug
         
     def _parseSentence(self, sentence):
         # Define the patterns
@@ -53,10 +56,7 @@ class Tree:
             node.l = self._parseSentence(leftSentence)
             node.r = self._parseSentence(rightSentence)
         else: # Otherwise, we have reach an end node (leaf)
-            node.word = subsequence
-        
-        #print(label) # Extract the sentiment label
-        #print(subsequence) # Extract the next subsentence
+            node.word = vocabulary.vocab.addWord(subsequence)
         
         return node
 
@@ -108,6 +108,6 @@ class Tree:
             if(node.word != None): # Leaf
                 for i in range(level):
                     print('  ', end="")
-                print(node.word, " ", node.label)
+                print(node.word.string, " ", node.label)
             if(node.r != None):
                 self._printTree(node.r, level+1)

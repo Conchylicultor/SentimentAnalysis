@@ -31,3 +31,6 @@ def loadDataset(filename):
         dataset.append(tree.Tree(line)) # Create the tree for each sentence
 
     return dataset
+
+def computeError(dataset):
+    pass
