@@ -26,8 +26,11 @@ def main():
     
     # Loading dataset
     trainingSet = utils.loadDataset("trees/train.txt");
+    print("Training loaded !")
     testingSet = utils.loadDataset("trees/test.txt");
+    print("Testing loaded !")
     #validationSet = loadDataset("trees/dev.txt");
+    #print("Validation loaded !")
     
     vocabulary.vocab.sort();
     
@@ -43,6 +46,7 @@ def main():
     Ws = np.random.rand(params.nbClass, params.wordVectSpace)                                 * params.randInitMaxValueNN # Softmax classifier
     #L = # Vocabulary (List of N words on vector, representation) << Contained in the vocab variable
     
+    print("Start training...")
     # TODO: Include the training in the cross-validation loop (tune parametters)
     # Main loop
     for i in range(nbEpoch):
@@ -58,8 +62,22 @@ def main():
             finalOutput = utils.softmax(np.dot(Ws, rntnOutput)) # Use softmax classifier to get the final prediction
             
             # Backward pass (Compute the gradients)
-            gradientWs = np.dot(np.multiply(trainingSample.labelVect(), (np.ones(params.nbClass) - utils.softmax(np.dot(Ws, rntnOutput)))), np.transpose(rntnOutput))
+            # Notations:
+            #   p: Output at root node (rntnOutput)
+            #   q: Output before softmax (q=Ws*p)
+            #   E: Cost of the current prediction (E = cost(softmax(Ws*p)))
+            #   t: Gound truth prediction (labelVect)
+            # We then have:
+            #   p -> q -> E
+            
+            # dE/dq = t.*(1 - softmax(q)) Derivative of the softmax classifier error
+            dE_dq = np.multiply(trainingSample.labelVect(), (np.ones(params.nbClass) - utils.softmax(np.dot(Ws, rntnOutput))))
+            
+            # dE/dWs = dE/dq * dq/dWs (with dq/dWs = p')
+            gradientWs = np.asmatrix(dE_dq).T * np.asmatrix(rntnOutput) # WARNING: Numpy array does not conserve the orientations so we need to convert to matrices
             gradientWs += regularisationTerm * Ws
+            
+            # dE/dW, dE/dV = dE/dq * dq/dp * dp/dV (same for W)
             
             # Update the weights
             Ws -= learningRate * gradientWs # Step in the oposite of the gradient

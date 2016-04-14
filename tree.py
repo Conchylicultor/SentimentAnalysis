@@ -18,13 +18,12 @@ class Node:
         
         # Node values
         # Pointer to the vocabulary list
-        self.word = None # If the node is a leaf, contains the Word loaded from the dictionary, None otherwise
-        # self.vect = # Vector representation of the word (of dimention wordVectSpace) << Warning: already contained on the word variable !!!!!)
+        self.word = None # If the node is a leaf, contains the Word (string and vector representaion) loaded from the dictionary, None otherwise
         
         self.label = -1 # Sentiment 0-4 (Ground truth)
         
         # For backpropagation:
-        self.output = None # Output of the tensor network (if not a leaf)
+        self.output = None # Output of the tensor network (same as .word.vect if leaf) (of dimention wordVectSpace)
         # self.sigmaCom =  
         # self.sigmaDown = 
 
@@ -93,22 +92,21 @@ class Tree:
     
     def _computeRntn(self, node, V, W):
         if(node.word != None): # Leaf
-            return node.word.vect
+            node.output = node.word.vect
         else: # Go deeper
             # Input
             b = self._computeRntn(node.l, V, W)
             c = self._computeRntn(node.r, V, W)
             
             inputVect = np.concatenate((b, c))
-            inputVectT = np.transpose(inputVect)
             
             # Compute the tensor term
             tensorResult = np.zeros(params.wordVectSpace)
             for i in range(params.wordVectSpace):
-                tensorResult[i] = np.dot(np.dot(inputVectT, V[i]), inputVect)
+                tensorResult[i] = inputVect.T.dot(V[i]).dot(inputVect) # x' * V * x
             
             node.output = utils.actFct(tensorResult + np.dot(W,inputVect)) # Store the result for the backpropagation (What do we store in the output ?? Before or after the activation fct ??)
-            return node.output
+        return node.output
     
     def labelVect(self):
         """
