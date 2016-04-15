@@ -159,7 +159,7 @@ class Tree:
         return self._evaluateCost(self.root, Ws)
     
     def _evaluateCost(self, node, Ws):
-        currentCost = utils.softClas(Ws, node.output) [node.label] # We only take the cell which correspond to the label, all other terms are null
+        currentCost = np.log(utils.softClas(Ws, node.output) [node.label]) # We only take the cell which correspond to the label, all other terms are null
         if(node.word == None): # Not a leaf, we continue exploring the tree
             currentCost += self._evaluateCost(node.l, Ws) # Left
             currentCost += self._evaluateCost(node.r, Ws) # Right
