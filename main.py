@@ -15,7 +15,7 @@ import vocabulary
 # Parametters
 nbEpoch = 150
 learningRate = 0.1 # TODO: Replace by AdaGrad !!
-regularisationTerm = 0.01 # Lambda
+regularisationTerm = 0.0001 # Lambda
 
 def main():
     print("Welcome into RNTN implementation 0.1")
@@ -36,15 +36,15 @@ def main():
     
     print("Datasets loaded !")
     
-    # Datatransform (normalisation, remove outliers,...) ??
+    # Datatransform (normalisation, remove outliers,...) ?? > Not here
     
     # Creating the model
     # TODO: Possibility of loading from file (default initialize randomly)
-    # TODO: What is the best possible initialisation
+    # Initialisation with small values (best solution ??)
     V  = np.random.rand(params.wordVectSpace, 2*params.wordVectSpace, 2*params.wordVectSpace) * params.randInitMaxValueNN # Tensor of the RNTN layer
     W  = np.random.rand(params.wordVectSpace, 2*params.wordVectSpace)                         * params.randInitMaxValueNN # Regular term of the RNTN layer
     Ws = np.random.rand(params.nbClass, params.wordVectSpace)                                 * params.randInitMaxValueNN # Softmax classifier
-    #L = # Vocabulary (List of N words on vector, representation) << Contained in the vocab variable
+    #L = # Vocabulary (List of N words on vector representation) << Contained in the vocab variable
     
     print("Start training...")
     # TODO: Include the training in the cross-validation loop (tune parametters)
@@ -53,13 +53,13 @@ def main():
         print("Epoch: ", i)
         
         # Randomly shuffle the dataset
-        # trainingSet.shuffle()
+        # trainingSet.shuffle() # TODO
         
         # Loop over the training samples
         for trainingSample in trainingSet: # Select next the training sample
             # Forward pass
             rntnOutput = trainingSample.computeRntn(V, W) # Evaluate the model recursivelly
-            finalOutput = utils.softmax(np.dot(Ws, rntnOutput)) # Use softmax classifier to get the final prediction
+            finalOutput = utils.softClas(Ws, rntnOutput) # Use softmax classifier to get the final prediction
             
             # Backward pass (Compute the gradients)
             # Notations:
@@ -71,20 +71,32 @@ def main():
             #   p -> ... -> p(last layer) -> q -> E
             
             # dE/dq = t.*(1 - softmax(q)) Derivative of the softmax classifier error
-            dE_dq = np.multiply(trainingSample.labelVect(), (np.ones(params.nbClass) - utils.softmax(np.dot(Ws, rntnOutput))))
+            dE_dq = np.multiply(trainingSample.labelVect(), (np.ones(params.nbClass) - utils.softClas(Ws, rntnOutput)))
             
             # dE/dWs = dE/dq * dq/dWs (with dq/dWs = p')
             gradientWs = np.asmatrix(dE_dq).T * np.asmatrix(rntnOutput) # WARNING: Numpy array does not conserve the orientations so we need to convert to matrices
-            gradientWs += regularisationTerm * Ws
             
             # dE/dW, dE/dV = dE/dq * dq/dp * dp/dV (same for W)
             dE_dp = Ws.T * dE_dq # WARNING: DOES NOT CORRESPOND EXACTLY TO THE FORMULA ON THE PAPER
             gradientV, gradientW = trainingSample.backpropagateRntn(dE_dp)
             
+            # Add regularisation
+            Ws += regularisationTerm * Ws
+            V  += regularisationTerm * V
+            W  += regularisationTerm * W
+            # What about L ??
+            
             # Update the weights
-            Ws -= learningRate * gradientWs # Step in the oposite of the gradient
+            Ws -= learningRate * gradientWs # Step in the oposite direction of the gradient
+            V  -= learningRate * gradientV
+            W  -= learningRate * gradientW
+            # L is updated when calling backpropagateRntn ??
         
         # Compute new testing error
+        print("Compute errors...")
+        trError = utils.computeError(trainingSet, V, W, Ws, regularisationTerm)
+        teError = utils.computeError(testingSet,  V, W, Ws, regularisationTerm, True)
+        print("Train error: ", trError, " | Test error: ",  teError)
         
         # Saving the model (every X epoch)
 

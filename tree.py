@@ -23,7 +23,7 @@ class Node:
         self.label = -1 # Sentiment 0-4 (Ground truth)
         
         # For backpropagation:
-        self.output = None # Output of the tensor network (same as .word.vect if leaf) (of dimention wordVectSpace)
+        self.output  = None # Output of the tensor network after the activation function (same as .word.vect if leaf) (of dimention wordVectSpace)
         # self.sigmaCom =  
         # self.sigmaDown = 
 
@@ -38,6 +38,9 @@ class Tree:
         # self.printTree() # Debug
         
     def _parseSentence(self, sentence):
+        """
+        Generate the tree from the string
+        """
         # Define the patterns
         patternRoot = '\(([0-9]+) (.*)\)' # For the label and the word/subsentence
         
@@ -114,7 +117,7 @@ class Tree:
         """
         return self._backpropagateRntn(self.root, sigmaCom)
     
-    def _backpropagateRntn(self, sigmaCom):
+    def _backpropagateRntn(self, node, sigmaCom):
         if(node.word != None): # Leaf
             # TODO: Backpropagate L too ??? Modify the vector word space ???
             return None, None # Return empty value (does not depend of V nor W)
@@ -130,6 +133,19 @@ class Tree:
             gradientVLeft,  gradientWLeft  = self._backpropagateRntn(node.l, sigmaDownLeft)
             gradientVRight, gradientWRight = self._backpropagateRntn(node.r, sigmaDownRight)
             return gradientVLeft + gradientVRight + gradientV, gradientWLeft + gradientWRight + gradientW
+    
+    def evaluateCost(self, Ws):
+        """
+        Recursivelly compute the cost of each node and sum up the result
+        """
+        return self._evaluateCost(self.root, Ws)
+    
+    def _evaluateCost(self, node, Ws):
+        currentCost = utils.softClas(Ws, node.output) [node.label] # We only take the cell which correspond to the label, all other terms are null
+        if(node.word == None): # Not a leaf, we continue exploring the tree
+            currentCost += self._evaluateCost(node.l, Ws) # Left
+            currentCost += self._evaluateCost(node.r, Ws) # Right
+        return currentCost
     
     def labelVect(self):
         """
