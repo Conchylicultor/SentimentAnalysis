@@ -62,23 +62,7 @@ def main():
             finalOutput = utils.softClas(Ws, rntnOutput) # Use softmax classifier to get the final prediction
             
             # Backward pass (Compute the gradients)
-            # Notations:
-            #   p: Output at root node (rntnOutput)
-            #   q: Output before softmax (q=Ws*p)
-            #   E: Cost of the current prediction (E = cost(softmax(Ws*p)))
-            #   t: Gound truth prediction (labelVect)
-            # We then have:
-            #   p -> ... -> p(last layer) -> q -> E
-            
-            # dE/dq = t.*(1 - softmax(q)) Derivative of the softmax classifier error
-            dE_dq = np.multiply(trainingSample.labelVect(), (np.ones(params.nbClass) - utils.softClas(Ws, rntnOutput)))
-            
-            # dE/dWs = dE/dq * dq/dWs (with dq/dWs = p')
-            gradientWs = np.asmatrix(dE_dq).T * np.asmatrix(rntnOutput) # WARNING: Numpy array does not conserve the orientations so we need to convert to matrices
-            
-            # dE/dW, dE/dV = dE/dq * dq/dp * dp/dV (same for W)
-            dE_dp = Ws.T * dE_dq # WARNING: DOES NOT CORRESPOND EXACTLY TO THE FORMULA ON THE PAPER
-            gradientV, gradientW = trainingSample.backpropagateRntn(dE_dp)
+            gradientV, gradientW, gradientWs = trainingSample.backpropagateRntn(Ws)
             
             # Add regularisation
             Ws += regularisationTerm * Ws

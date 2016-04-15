@@ -111,10 +111,28 @@ class Tree:
             node.output = utils.actFct(tensorResult + np.dot(W,inputVect)) # Store the result for the backpropagation (What do we store in the output ?? Before or after the activation fct ??)
         return node.output
     
-    def backpropagateRntn(self, sigmaCom):
+    def backpropagateRntn(self, Ws):
         """
         Compute the derivate at each level and return the sum of it
         """
+        # Notations:
+        #   p: Output at root node (rntnOutput)
+        #   q: Output before softmax (q=Ws*p)
+        #   E: Cost of the current prediction (E = cost(softmax(Ws*p)))
+        #   t: Gound truth prediction (labelVect)
+        # We then have:
+        #   p -> ... -> p(last layer) -> q -> E
+        
+        # dE/dq = t.*(1 - softmax(q)) Derivative of the softmax classifier error
+        dE_dq = np.multiply(trainingSample.labelVect(), (np.ones(params.nbClass) - utils.softClas(Ws, rntnOutput)))
+        
+        # dE/dWs = dE/dq * dq/dWs (with dq/dWs = p')
+        gradientWs = np.asmatrix(dE_dq).T * np.asmatrix(rntnOutput) # WARNING: Numpy array does not conserve the orientations so we need to convert to matrices
+        
+        # dE/dW, dE/dV = dE/dq * dq/dp * dp/dV (same for W)
+        dE_dp = Ws.T * dE_dq # WARNING: DOES NOT CORRESPOND EXACTLY TO THE FORMULA ON THE PAPER
+        
+        sigmaCom = dE_dp
         return self._backpropagateRntn(self.root, sigmaCom)
     
     def _backpropagateRntn(self, node, sigmaCom):
