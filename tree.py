@@ -108,6 +108,29 @@ class Tree:
             node.output = utils.actFct(tensorResult + np.dot(W,inputVect)) # Store the result for the backpropagation (What do we store in the output ?? Before or after the activation fct ??)
         return node.output
     
+    def backpropagateRntn(self, sigmaCom):
+        """
+        Compute the derivate at each level and return the sum of it
+        """
+        return self._backpropagateRntn(self.root, sigmaCom)
+    
+    def _backpropagateRntn(self, sigmaCom):
+        if(node.word != None): # Leaf
+            # TODO: Backpropagate L too ??? Modify the vector word space ???
+            return None, None # Return empty value (does not depend of V nor W)
+        else: # Go deeper
+            sigmaCom = np.multiply(sigmaCom, utils.actFct) # Activation function
+            
+            b = node.l.output
+            c = node.r.output
+            bc = np.concatenate((b, c))
+            
+            gradientV = sigmaCom.dot(np.asmatrix(bc).T * np.asmatrix(bc))
+            gradientW = np.asmatrix(sigmaCom).T * np.asmatrix(bc)
+            gradientVLeft,  gradientWLeft  = self._backpropagateRntn(node.l, sigmaDownLeft)
+            gradientVRight, gradientWRight = self._backpropagateRntn(node.r, sigmaDownRight)
+            return gradientVLeft + gradientVRight + gradientV, gradientWLeft + gradientWRight + gradientW
+    
     def labelVect(self):
         """
         Return the ground truth of the label (Variable t on the paper).

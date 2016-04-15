@@ -68,7 +68,7 @@ def main():
             #   E: Cost of the current prediction (E = cost(softmax(Ws*p)))
             #   t: Gound truth prediction (labelVect)
             # We then have:
-            #   p -> q -> E
+            #   p -> ... -> p(last layer) -> q -> E
             
             # dE/dq = t.*(1 - softmax(q)) Derivative of the softmax classifier error
             dE_dq = np.multiply(trainingSample.labelVect(), (np.ones(params.nbClass) - utils.softmax(np.dot(Ws, rntnOutput))))
@@ -78,6 +78,8 @@ def main():
             gradientWs += regularisationTerm * Ws
             
             # dE/dW, dE/dV = dE/dq * dq/dp * dp/dV (same for W)
+            dE_dp = Ws.T * dE_dq # WARNING: DOES NOT CORRESPOND EXACTLY TO THE FORMULA ON THE PAPER
+            gradientV, gradientW = trainingSample.backpropagateRntn(dE_dp)
             
             # Update the weights
             Ws -= learningRate * gradientWs # Step in the oposite of the gradient

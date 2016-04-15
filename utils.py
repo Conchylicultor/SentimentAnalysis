@@ -48,5 +48,18 @@ def loadDataset(filename):
 
     return dataset
 
-def computeError(dataset):
-    pass
+def computeError(dataset, Ws, V, W, regularisationTerm):
+    """
+    Evaluate the cost error of the given dataset using the parametters
+    WARNING: the dataset must have completed the forward pass with the given parametters
+    before calling this function (the output is not computed in this error)
+    """
+    costRegularisation = regularisationTerm * (norm(W*W) + norm(Ws*Ws) + norm(V*V)) # TODO: Correct way to compute matrix multiplication (array vs matrix, norm, what about L ??...)
+    
+    # Evaluate error for each given sample
+    costError = 0
+    for sample in dataset:
+        costError += sample.evaluateCost() + costRegularisation
+    costError /= len(dataset) # Normalize the cost
+    
+    return costError
