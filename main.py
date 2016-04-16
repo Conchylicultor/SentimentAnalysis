@@ -31,7 +31,7 @@ def main():
     print("Training loaded !")
     testingSet = utils.loadDataset("trees/test.txt");
     print("Testing loaded !")
-    validationSet = loadDataset("trees/dev.txt");
+    validationSet = utils.loadDataset("trees/dev.txt");
     print("Validation loaded !")
     
     vocabulary.vocab.sort();
@@ -59,25 +59,30 @@ def main():
         
         # Loop over the training samples
         # TODO: Use mini-batch instead of online learning
+        nbSampleCovered = 1 # To plot the progression of the epoch
         for trainingSample in trainingSet: # Select next the training sample
             # Forward pass
             rntnOutput = trainingSample.computeRntn(V, W) # Evaluate the model recursivelly
             finalOutput = utils.softClas(Ws, rntnOutput) # Use softmax classifier to get the final prediction
             
             # Backward pass (Compute the gradients)
-            gradientV, gradientW, gradientWs = trainingSample.backpropagateRntn(Ws)
+            gradientV, gradientW, gradientWs = trainingSample.backpropagateRntn(V, W, Ws)
             
             # Add regularisation (we don't care about the factor 2 contained in regularisationTerm ? < could be useful for gradient checking)
-            #gradientV  += regularisationTerm * miniBatchSize * V
-            #gradientW  += regularisationTerm * miniBatchSize * W
+            gradientV  += regularisationTerm * miniBatchSize * V
+            gradientW  += regularisationTerm * miniBatchSize * W
             gradientWs += regularisationTerm * miniBatchSize * Ws
             # What about L ??
             
             # Update the weights
-            #V  -= learningRate * gradientV # Step in the oposite direction of the gradient
-            #W  -= learningRate * gradientW
+            V  -= learningRate * gradientV # Step in the oposite direction of the gradient
+            W  -= learningRate * gradientW
             Ws -= learningRate * gradientWs
             # L is updated when calling backpropagateRntn ??
+            
+            if nbSampleCovered % np.floor(len(trainingSet)/10) == 0:
+                print(nbSampleCovered / len(trainingSet), "% of dataset covered")
+            nbSampleCovered += 1
         
         # Compute new testing error
         print("Compute errors...")

@@ -119,7 +119,7 @@ class Tree:
             node.output = utils.actFct(tensorResult + np.dot(W,inputVect)) # Store the result for the backpropagation (What do we store in the output ?? Before or after the activation fct ??)
         return node.output
     
-    def backpropagateRntn(self, Ws):
+    def backpropagateRntn(self, V, W, Ws):
         """
         Compute the derivate at each level and return the sum of it
         """
@@ -132,9 +132,9 @@ class Tree:
         # We then have:
         #   t -> a -> t -> a -> ... t -> a(last layer) -> z (projection on dim 5) -> y (softmax prediction) -> E (cost)
         
-        return self._backpropagateRntn(self.root, Ws, None) # No incoming error for the root node (except the one coming from softmax)
+        return self._backpropagateRntn(self.root, V, W, Ws, None) # No incoming error for the root node (except the one coming from softmax)
     
-    def _backpropagateRntn(self, node, Ws, sigmaCom):
+    def _backpropagateRntn(self, node, V, W, Ws, sigmaCom):
         # Compute error coming from the softmax classifier on the current node
         # dE/dz = (t - softmax(z)) Derivative of the cost with respect to the softmax classifier input
         t = node.labelVect()
@@ -145,7 +145,7 @@ class Tree:
         gradientWs = utils.dotxyt(dE_dz, node.output) # (t-y)*a'
         
         # Error coming through the softmax classifier (d*1 vector)
-        sigmaSoft = np.multiply(Ws.T.dot(dE_dz), np.actFctDerFromOutput(node.output)) # Ws' (t_i-y_i) .* f'(x_i) (WARNING: The node.output correspond to the output AFTER the activation fct, so we have f2'(f(x_i)))
+        sigmaSoft = np.multiply(Ws.T.dot(dE_dz), utils.actFctDerFromOutput(node.output)) # Ws' (t_i-y_i) .* f'(x_i) (WARNING: The node.output correspond to the output AFTER the activation fct, so we have f2'(f(x_i)))
         if sigmaCom == None: # Root node
             sigmaCom = sigmaSoft # Only softmax error is incoming
         else:
@@ -156,6 +156,7 @@ class Tree:
         
         if(node.word != None): # Leaf
             # TODO: Backpropagate L too ??? Modify the vector word space ???
+            node.word.vect += sigmaCom
             pass # Return empty value (gradient does not depend of V nor W)
         else: # Go deeper
             # Construct the incoming output
@@ -165,43 +166,30 @@ class Tree:
             
             # Compute the gradient at the current node
             gradientV = np.zeros((params.wordVectSpace, 2*params.wordVectSpace, 2*params.wordVectSpace))
-            for k in range(params.wordVectSpace)
+            for k in range(params.wordVectSpace):
                 gradientV[k] = sigmaCom[k] * utils.dotxyt(bc, bc) # 2d*2d matrix
             gradientW = utils.dotxyt(sigmaCom, bc) # d*2d matrix
             
             # Compute the error at the bottom of the layer
-            #sigmaDown = 
-            #for k in range(params.wordVectSpace)
-                #pass
-            #sigmaDown = 
+            sigmaDown = W.T.dot(sigmaCom) # (regular term)
+            for k in range(params.wordVectSpace): # Compute S (tensor term)
+                sigmaDown += sigmaCom[k] * (V[k] + V[k].T).dot(bc)
+            sigmaDown = np.multiply(sigmaDown, utils.actFctDerFromOutput(bc)) # Activation fct
+            # TODO: What about the activation function (here, after, before ?), check content
             
-            # TODO: What about the activation function (here, after, before ?)
+            d = params.wordVectSpace
             
             # Propagate the error down to the next nodes
-            gradientVSub, gradientWSub, gradientWsSub = self._backpropagateRntn(node.l, Ws, None)
+            gradientVSub, gradientWSub, gradientWsSub = self._backpropagateRntn(node.l, V, W, Ws, sigmaDown[0:d])
             if gradientVSub != None:
                 gradientV += gradientVSub
                 gradientW += gradientWSub # If non leaf, gradientWSub shouldn't be null either
             gradientWs += gradientWsSub
-            gradientVSub, gradientWSub, gradientWsSub = self._backpropagateRntn(node.r, Ws, None)
+            gradientVSub, gradientWSub, gradientWsSub = self._backpropagateRntn(node.r, V, W, Ws, sigmaDown[d:2*d])
             if gradientVSub != None:
                 gradientV += gradientVSub
                 gradientW += gradientWSub
             gradientWs += gradientWsSub
-            
-            
-            #sigmaCom = np.multiply(sigmaCom, utils.actFct) # Activation function
-            
-            #b = node.l.output
-            #c = node.r.output
-            #bc = np.concatenate((b, c))
-            
-            #gradientV = sigmaCom.dot(np.asmatrix(bc).T * np.asmatrix(bc))
-            #gradientW = np.asmatrix(sigmaCom).T * np.asmatrix(bc)
-            #gradientVLeft,  gradientWLeft  = self._backpropagateRntn(node.l, sigmaDownLeft)
-            #gradientVRight, gradientWRight = self._backpropagateRntn(node.r, sigmaDownRight)
-            ## TODO: Check if returned gradients are null or not
-            #return gradientVLeft + gradientVRight + gradientV, gradientWLeft + gradientWRight + gradientW
         
         return gradientV, gradientW, gradientWs
     
