@@ -23,9 +23,17 @@ class Node:
         self.label = -1 # Sentiment 0-4 (Ground truth)
         
         # For backpropagation:
-        self.output  = None # Output of the tensor network after the activation function (same as .word.vect if leaf) (of dimention wordVectSpace)
+        self.output  = None # Output of the tensor network AFTER the activation function (same as .word.vect if leaf) (of dimention wordVectSpace)
         # self.sigmaCom =  
         # self.sigmaDown = 
+        
+    def labelVect(self):
+        """
+        Return the ground truth of the label (Variable t on the paper).
+        """
+        t = np.zeros(params.nbClass) # Zeros everywhere
+        t[self.label] = 1 # Except a one on the true label
+        return t
 
 class Tree:
     def __init__(self, sentence):
@@ -116,41 +124,63 @@ class Tree:
         Compute the derivate at each level and return the sum of it
         """
         # Notations:
-        #   p: Output at root node (rntnOutput)
-        #   q: Output before softmax (q=Ws*p)
-        #   E: Cost of the current prediction (E = cost(softmax(Ws*p)))
+        #   a: Output at root node (after activation)
+        #   z: Output before softmax (z=Ws*p)
+        #   y: Output after softmax, final prediction (y=softmax(z))
+        #   E: Cost of the current prediction (E = cost(softmax(Ws*p)) = cost(y))
         #   t: Gound truth prediction (labelVect)
         # We then have:
-        #   p -> ... -> p(last layer) -> q -> E
+        #   t -> a -> t -> a -> ... t -> a(last layer) -> z (projection on dim 5) -> y (softmax prediction) -> E (cost)
         
-        # dE/dq = t.*(1 - softmax(q)) Derivative of the softmax classifier error
-        dE_dq = np.multiply(trainingSample.labelVect(), (np.ones(params.nbClass) - utils.softClas(Ws, rntnOutput)))
-        
-        # dE/dWs = dE/dq * dq/dWs (with dq/dWs = p')
-        gradientWs = np.asmatrix(dE_dq).T * np.asmatrix(rntnOutput) # WARNING: Numpy array does not conserve the orientations so we need to convert to matrices
-        
-        # dE/dW, dE/dV = dE/dq * dq/dp * dp/dV (same for W)
-        dE_dp = Ws.T * dE_dq # WARNING: DOES NOT CORRESPOND EXACTLY TO THE FORMULA ON THE PAPER
-        
-        sigmaCom = dE_dp
-        return self._backpropagateRntn(self.root, sigmaCom)
+        return self._backpropagateRntn(self.root, Ws, 0)
     
-    def _backpropagateRntn(self, node, sigmaCom):
+    def _backpropagateRntn(self, node, Ws, sigmaCom):
+        # Compute error coming from the softmax classifier on the current node
+        # dE/dz = (t - softmax(z)) Derivative of the cost with respect to the softmax classifier input
+        t = node.labelVect()
+        y = utils.softClas(Ws, node.output)
+        dE_dz = (t - y) # TODO: Check the sign !!
+        
+        # Gradient of Ws
+        gradientWs = utils.dotxyt(dE_dz, node.output) # (t-y)*a'
+        
+        # Error coming through the softmax classifier (d*1 vector)
+        sigmaSoft = np.multiply(Ws.T.dot(dE_dz), np.actFctDerFromOutput(node.output)) # Ws' (t_i-y_i) .* f'(x_i) (WARNING: The node.output correspond to the output AFTER the activation fct, so we have f2'(f(x_i)))
+        
+        gradientV = None
+        gradientW = None
+        
         if(node.word != None): # Leaf
             # TODO: Backpropagate L too ??? Modify the vector word space ???
-            return None, None # Return empty value (does not depend of V nor W)
+            pass # Return empty value (gradient does not depend of V nor W)
         else: # Go deeper
-            sigmaCom = np.multiply(sigmaCom, utils.actFct) # Activation function
             
-            b = node.l.output
-            c = node.r.output
-            bc = np.concatenate((b, c))
+            gradientVSub, gradientWSub, gradientWsSub = self._backpropagateRntn(node.l, Ws, 0)
+            if gradientVSub != None: # If non leaf, gradientWSub shouldn't be null either
+                gradientV += gradientVSub
+                gradientW += gradientWSub
+            gradientWs += gradientWsSub
+            gradientVSub, gradientWSub, gradientWsSub = self._backpropagateRntn(node.r, Ws, 0)
+            if gradientVSub != None:
+                gradientV += gradientVSub
+                gradientW += gradientWSub
+            gradientWs += gradientWsSub
             
-            gradientV = sigmaCom.dot(np.asmatrix(bc).T * np.asmatrix(bc))
-            gradientW = np.asmatrix(sigmaCom).T * np.asmatrix(bc)
-            gradientVLeft,  gradientWLeft  = self._backpropagateRntn(node.l, sigmaDownLeft)
-            gradientVRight, gradientWRight = self._backpropagateRntn(node.r, sigmaDownRight)
-            return gradientVLeft + gradientVRight + gradientV, gradientWLeft + gradientWRight + gradientW
+            
+            #sigmaCom = np.multiply(sigmaCom, utils.actFct) # Activation function
+            
+            #b = node.l.output
+            #c = node.r.output
+            #bc = np.concatenate((b, c))
+            
+            #gradientV = sigmaCom.dot(np.asmatrix(bc).T * np.asmatrix(bc))
+            #gradientW = np.asmatrix(sigmaCom).T * np.asmatrix(bc)
+            #gradientVLeft,  gradientWLeft  = self._backpropagateRntn(node.l, sigmaDownLeft)
+            #gradientVRight, gradientWRight = self._backpropagateRntn(node.r, sigmaDownRight)
+            ## TODO: Check if returned gradients are null or not
+            #return gradientVLeft + gradientVRight + gradientV, gradientWLeft + gradientWRight + gradientW
+        
+        return gradientV, gradientW, gradientWs
     
     def evaluateCost(self, Ws):
         """
@@ -159,19 +189,12 @@ class Tree:
         return self._evaluateCost(self.root, Ws)
     
     def _evaluateCost(self, node, Ws):
+        #TODO: This could be optimised (only take the right row instead of multiplying the whole matrix)
         currentCost = np.log(utils.softClas(Ws, node.output) [node.label]) # We only take the cell which correspond to the label, all other terms are null
         if(node.word == None): # Not a leaf, we continue exploring the tree
             currentCost += self._evaluateCost(node.l, Ws) # Left
             currentCost += self._evaluateCost(node.r, Ws) # Right
         return currentCost
-    
-    def labelVect(self):
-        """
-        Return the ground truth of the label (Variable t on the paper).
-        """
-        t = np.zeros(params.nbClass) # Zeros everywhere
-        t[self.root.label] = 1 # Except a one on the true label
-        return t
         
     def printTree(self):
         """

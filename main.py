@@ -7,6 +7,7 @@ Use python 3
 """
 
 import os, sys
+import random
 import numpy as np
 import params
 import utils
@@ -53,9 +54,10 @@ def main():
         print("Epoch: ", i)
         
         # Randomly shuffle the dataset
-        # trainingSet.shuffle() # TODO
+        random.shuffle(trainingSet) # Use a fixed seed ?
         
         # Loop over the training samples
+        # TODO: Use mini-batch instead of online learning
         for trainingSample in trainingSet: # Select next the training sample
             # Forward pass
             rntnOutput = trainingSample.computeRntn(V, W) # Evaluate the model recursivelly
@@ -64,16 +66,16 @@ def main():
             # Backward pass (Compute the gradients)
             gradientV, gradientW, gradientWs = trainingSample.backpropagateRntn(Ws)
             
-            # Add regularisation
-            Ws += regularisationTerm * Ws
-            V  += regularisationTerm * V
-            W  += regularisationTerm * W
+            # Add regularisation (we don't care about the factor 2 contained in regularisationTerm ? < could be useful for gradient checking)
+            #gradientV  += regularisationTerm * V
+            #gradientW  += regularisationTerm * W
+            gradientWs += regularisationTerm * Ws
             # What about L ??
             
             # Update the weights
-            Ws -= learningRate * gradientWs # Step in the oposite direction of the gradient
-            V  -= learningRate * gradientV
-            W  -= learningRate * gradientW
+            #V  -= learningRate * gradientV # Step in the oposite direction of the gradient
+            #W  -= learningRate * gradientW
+            Ws -= learningRate * gradientWs
             # L is updated when calling backpropagateRntn ??
         
         # Compute new testing error

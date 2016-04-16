@@ -23,17 +23,33 @@ def softClas(Ws, a):
     """
     return softmax(np.dot(Ws, a))
 
+def dotxyt(x, y):
+    """
+    Return the result of x*y'
+    Takes two numpy array in parametter. This function is usefull because
+    the default dot product for one dimentional array does not work
+    """
+    return np.asarray(np.asmatrix(x).T * np.asmatrix(y)) # Is an x.size*y.size array
+
 def actFct(x):
     """
     The NN activation function (here tanh)
     """
     return np.tanh(x)
 
-def actFctDer(x):
+def actFctDerFromOutput(x):
     """
     Derivate of the activation function
+    WARNING: In this version, we take as input an output value 
+    after the activation function (x = tanh(output of the tensor)).
     """
-    return 1.0 - np.tanh(x)**2
+    return 1.0 - x**2
+
+#def actFctDer(x):
+    #"""
+    #Derivate of the activation function
+    #"""
+    #return 1.0 - np.tanh(x)**2
 
 # Other utils functions
 
