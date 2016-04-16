@@ -146,7 +146,7 @@ class Tree:
         
         # Error coming through the softmax classifier (d*1 vector)
         sigmaSoft = np.multiply(Ws.T.dot(dE_dz), utils.actFctDerFromOutput(node.output)) # Ws' (t_i-y_i) .* f'(x_i) (WARNING: The node.output correspond to the output AFTER the activation fct, so we have f2'(f(x_i)))
-        if sigmaCom == None: # Root node
+        if sigmaCom is None: # Root node
             sigmaCom = sigmaSoft # Only softmax error is incoming
         else:
             sigmaCom += sigmaSoft # Otherwise, we also add the incoming error from the previous node
@@ -156,7 +156,7 @@ class Tree:
         
         if(node.word != None): # Leaf
             # TODO: Backpropagate L too ??? Modify the vector word space ???
-            node.word.vect += sigmaCom
+            node.word.vect -= sigmaCom # Oposite direction of gradient
             pass # Return empty value (gradient does not depend of V nor W)
         else: # Go deeper
             # Construct the incoming output
@@ -181,12 +181,12 @@ class Tree:
             
             # Propagate the error down to the next nodes
             gradientVSub, gradientWSub, gradientWsSub = self._backpropagateRntn(node.l, V, W, Ws, sigmaDown[0:d])
-            if gradientVSub != None:
+            if gradientVSub is not None:
                 gradientV += gradientVSub
                 gradientW += gradientWSub # If non leaf, gradientWSub shouldn't be null either
             gradientWs += gradientWsSub
             gradientVSub, gradientWSub, gradientWsSub = self._backpropagateRntn(node.r, V, W, Ws, sigmaDown[d:2*d])
-            if gradientVSub != None:
+            if gradientVSub is not None:
                 gradientV += gradientVSub
                 gradientW += gradientWSub
             gradientWs += gradientWsSub

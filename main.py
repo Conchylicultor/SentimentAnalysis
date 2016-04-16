@@ -78,7 +78,7 @@ def main():
             V  -= learningRate * gradientV # Step in the oposite direction of the gradient
             W  -= learningRate * gradientW
             Ws -= learningRate * gradientWs
-            # L is updated when calling backpropagateRntn ??
+            # L is updated when calling backpropagateRntn
             
             if nbSampleCovered % np.floor(len(trainingSet)/10) == 0:
                 print(nbSampleCovered / len(trainingSet), "% of dataset covered")
@@ -91,6 +91,9 @@ def main():
         print("Train error: ", trError, " | Test error: ",  teError)
         
         # Saving the model (every X epoch)
+        print("Saving model...")
+        vocabulary.vocab.save("save/dict")
+        np.savez("save/model", V=V, W=W, Ws=Ws)
         
     print("Training complete, validating...")
     vaError = utils.computeError(validationSet,  V, W, Ws, regularisationTerm, True)
