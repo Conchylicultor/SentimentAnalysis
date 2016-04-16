@@ -16,6 +16,7 @@ import vocabulary
 # Parametters
 nbEpoch = 150
 learningRate = 0.1 # TODO: Replace by AdaGrad !!
+miniBatchSize = 1 #30
 regularisationTerm = 0.0001 # Lambda
 
 def main():
@@ -30,8 +31,8 @@ def main():
     print("Training loaded !")
     testingSet = utils.loadDataset("trees/test.txt");
     print("Testing loaded !")
-    #validationSet = loadDataset("trees/dev.txt");
-    #print("Validation loaded !")
+    validationSet = loadDataset("trees/dev.txt");
+    print("Validation loaded !")
     
     vocabulary.vocab.sort();
     
@@ -67,9 +68,9 @@ def main():
             gradientV, gradientW, gradientWs = trainingSample.backpropagateRntn(Ws)
             
             # Add regularisation (we don't care about the factor 2 contained in regularisationTerm ? < could be useful for gradient checking)
-            #gradientV  += regularisationTerm * V
-            #gradientW  += regularisationTerm * W
-            gradientWs += regularisationTerm * Ws
+            #gradientV  += regularisationTerm * miniBatchSize * V
+            #gradientW  += regularisationTerm * miniBatchSize * W
+            gradientWs += regularisationTerm * miniBatchSize * Ws
             # What about L ??
             
             # Update the weights
@@ -85,7 +86,11 @@ def main():
         print("Train error: ", trError, " | Test error: ",  teError)
         
         # Saving the model (every X epoch)
-
+        
+    print("Training complete, validating...")
+    vaError = utils.computeError(validationSet,  V, W, Ws, regularisationTerm, True)
+    print("Validation error: ", vaError)
+    
 
 if __name__ == "__main__":
     main()

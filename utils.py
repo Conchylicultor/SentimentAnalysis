@@ -77,6 +77,9 @@ def computeError(dataset, V, W, Ws, regularisationTerm, compute = False):
         compute: If false, the dataset must have completed the forward pass with the given parametters
         before calling this function (the output will not be computed in this fct but the old one will 
         be used)
+    Return:
+        TODO: Return also the % of correctly classified labels (and the number) (by node ?? or just the root ?? < Both)
+        In the paper, they uses 4 metrics (+/- or fine grained ; all or just root)
     """
     costRegularisation = regularisationTerm * (np.sum(W*W) + np.sum(Ws*Ws) + np.sum(V*V)) # TODO: Correct way to compute matrix multiplication (Check array vs matrix, norm, what about L ??...)
     

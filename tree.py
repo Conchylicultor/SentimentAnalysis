@@ -132,7 +132,7 @@ class Tree:
         # We then have:
         #   t -> a -> t -> a -> ... t -> a(last layer) -> z (projection on dim 5) -> y (softmax prediction) -> E (cost)
         
-        return self._backpropagateRntn(self.root, Ws, 0)
+        return self._backpropagateRntn(self.root, Ws, None) # No incoming error for the root node (except the one coming from softmax)
     
     def _backpropagateRntn(self, node, Ws, sigmaCom):
         # Compute error coming from the softmax classifier on the current node
@@ -146,6 +146,10 @@ class Tree:
         
         # Error coming through the softmax classifier (d*1 vector)
         sigmaSoft = np.multiply(Ws.T.dot(dE_dz), np.actFctDerFromOutput(node.output)) # Ws' (t_i-y_i) .* f'(x_i) (WARNING: The node.output correspond to the output AFTER the activation fct, so we have f2'(f(x_i)))
+        if sigmaCom == None: # Root node
+            sigmaCom = sigmaSoft # Only softmax error is incoming
+        else:
+            sigmaCom += sigmaSoft # Otherwise, we also add the incoming error from the previous node
         
         gradientV = None
         gradientW = None
@@ -154,13 +158,32 @@ class Tree:
             # TODO: Backpropagate L too ??? Modify the vector word space ???
             pass # Return empty value (gradient does not depend of V nor W)
         else: # Go deeper
+            # Construct the incoming output
+            b = node.l.output
+            c = node.r.output
+            bc = np.concatenate((b, c))
             
-            gradientVSub, gradientWSub, gradientWsSub = self._backpropagateRntn(node.l, Ws, 0)
-            if gradientVSub != None: # If non leaf, gradientWSub shouldn't be null either
+            # Compute the gradient at the current node
+            gradientV = np.zeros((params.wordVectSpace, 2*params.wordVectSpace, 2*params.wordVectSpace))
+            for k in range(params.wordVectSpace)
+                gradientV[k] = sigmaCom[k] * utils.dotxyt(bc, bc) # 2d*2d matrix
+            gradientW = utils.dotxyt(sigmaCom, bc) # d*2d matrix
+            
+            # Compute the error at the bottom of the layer
+            #sigmaDown = 
+            #for k in range(params.wordVectSpace)
+                #pass
+            #sigmaDown = 
+            
+            # TODO: What about the activation function (here, after, before ?)
+            
+            # Propagate the error down to the next nodes
+            gradientVSub, gradientWSub, gradientWsSub = self._backpropagateRntn(node.l, Ws, None)
+            if gradientVSub != None:
                 gradientV += gradientVSub
-                gradientW += gradientWSub
+                gradientW += gradientWSub # If non leaf, gradientWSub shouldn't be null either
             gradientWs += gradientWsSub
-            gradientVSub, gradientWSub, gradientWsSub = self._backpropagateRntn(node.r, Ws, 0)
+            gradientVSub, gradientWSub, gradientWsSub = self._backpropagateRntn(node.r, Ws, None)
             if gradientVSub != None:
                 gradientV += gradientVSub
                 gradientW += gradientWSub
