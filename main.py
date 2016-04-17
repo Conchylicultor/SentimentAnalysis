@@ -12,9 +12,10 @@ import numpy as np
 import params
 import utils
 import vocabulary
+import rntnmodel
 
 # Parametters
-nbEpoch = 150
+nbEpoch = 30
 learningRate = 0.1 # TODO: Replace by AdaGrad !!
 miniBatchSize = 1 # TODO = 30
 regularisationTerm = 0.0001 # Lambda
@@ -22,9 +23,11 @@ regularisationTerm = 0.0001 # Lambda
 def main():
     print("Welcome into RNTN implementation 0.1")
     
+    random.seed("MetaMind") # Fixed seed
+    
     print("Parsing dataset, creating dictionary...")
     # Dictionary initialisation
-    vocabulary.initVocab() # Contain L
+    vocabulary.initVocab()
     
     # Loading dataset
     trainingSet = utils.loadDataset("trees/train.txt");
@@ -34,19 +37,13 @@ def main():
     validationSet = utils.loadDataset("trees/dev.txt");
     print("Validation loaded !")
     
-    vocabulary.vocab.sort();
-    
     print("Datasets loaded !")
+    print("Nb of words", vocabulary.vocab.length());
     
     # Datatransform (normalisation, remove outliers,...) ?? > Not here
     
     # Creating the model
-    # TODO: Possibility of loading from file (default initialize randomly)
-    # Initialisation with small values (best solution ??)
-    V  = np.random.rand(params.wordVectSpace, 2*params.wordVectSpace, 2*params.wordVectSpace) * params.randInitMaxValueNN # Tensor of the RNTN layer
-    W  = np.random.rand(params.wordVectSpace, 2*params.wordVectSpace)                         * params.randInitMaxValueNN # Regular term of the RNTN layer
-    Ws = np.random.rand(params.nbClass, params.wordVectSpace)                                 * params.randInitMaxValueNN # Softmax classifier
-    #L = # Vocabulary (List of N words on vector representation) << Contained in the vocab variable
+    model = rntnmodel.Model()
     
     print("Start training...")
     # TODO: Include the training in the cross-validation loop (tune parametters)
@@ -55,15 +52,14 @@ def main():
         print("Epoch: ", i)
         
         # Randomly shuffle the dataset
-        random.shuffle(trainingSet) # Use a fixed seed ?
+        random.shuffle(trainingSet)
         
         # Loop over the training samples
         # TODO: Use mini-batch instead of online learning
         nbSampleCovered = 1 # To plot the progression of the epoch
         for trainingSample in trainingSet: # Select next the training sample
             # Forward pass
-            rntnOutput = trainingSample.computeRntn(V, W) # Evaluate the model recursivelly
-            # finalOutput = utils.softClas(Ws, rntnOutput) # Use softmax classifier to get the final prediction
+            model.evaluateSample(trainingSample) # Compute the output recursivelly
             
             # Backward pass (Compute the gradients)
             gradientV, gradientW, gradientWs = trainingSample.backpropagateRntn(V, W, Ws)

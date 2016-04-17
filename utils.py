@@ -44,7 +44,7 @@ def actFctDerFromOutput(x):
     #return 1.0 - np.tanh(x)**2
 
 # Other utils functions
-
+    
 def loadDataset(filename):
     """
     Load and return the dataset given in parametter

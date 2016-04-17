@@ -16,16 +16,15 @@ class Node:
         self.l = None
         self.r = None
         
+        self.level = -1 # Deepness of the node (0=root) (Useful to plot more nicelly)
+        
         # Node values
         # Pointer to the vocabulary list
         self.word = None # If the node is a leaf, contains the Word (string and vector representaion) loaded from the dictionary, None otherwise
-        
         self.label = -1 # Sentiment 0-4 (Ground truth)
         
         # For backpropagation:
         self.output  = None # Output of the tensor network AFTER the activation function (same as .word.vect if leaf) (of dimention wordVectSpace)
-        # self.sigmaCom =  
-        # self.sigmaDown = 
         
     def labelVect(self):
         """
@@ -34,6 +33,16 @@ class Node:
         t = np.zeros(params.nbClass) # Zeros everywhere
         t[self.label] = 1 # Except a one on the true label
         return t
+    
+    def printInd(self, *args):
+        """
+        Indentate the text to print with the level value (useful to plot the trees)
+        """
+        for i in range(self.level):
+            print('  ', end="")
+        for arg in args:
+            print(arg, end="")
+        print() # New line
 
 class Tree:
     def __init__(self, sentence):
@@ -42,10 +51,10 @@ class Tree:
         Args:
             sentence: sentence at the PTB format
         """
-        self.root = self._parseSentence(sentence) # Generate the tree
+        self.root = self._parseSentence(sentence, 0) # Generate the tree
         # self.printTree() # Debug
         
-    def _parseSentence(self, sentence):
+    def _parseSentence(self, sentence, level):
         """
         Generate the tree from the string
         """
@@ -63,11 +72,12 @@ class Tree:
         # Node creation
         node = Node()
         node.label = label
+        node.level = level
         if positionBreak != 0: # Submatch, continue exploring
             leftSentence = subsequence[0:positionBreak]
             rightSentence = subsequence[positionBreak+1:]
-            node.l = self._parseSentence(leftSentence)
-            node.r = self._parseSentence(rightSentence)
+            node.l = self._parseSentence(leftSentence, level+1)
+            node.r = self._parseSentence(rightSentence, level+1)
         else: # Otherwise, we have reach an end node (leaf)
             node.word = vocabulary.vocab.addWord(subsequence)
         
@@ -93,31 +103,6 @@ class Tree:
                 positionBreak = i+1
                 break
         return positionBreak
-
-    def computeRntn(self, V, W):
-        """
-        Evaluate the vector of the complete sentence and compute all the intermediate
-        values (used to backpropagate)
-        """
-        return self._computeRntn(self.root, V, W)
-    
-    def _computeRntn(self, node, V, W):
-        if(node.word != None): # Leaf
-            node.output = node.word.vect
-        else: # Go deeper
-            # Input
-            b = self._computeRntn(node.l, V, W)
-            c = self._computeRntn(node.r, V, W)
-            
-            inputVect = np.concatenate((b, c))
-            
-            # Compute the tensor term
-            tensorResult = np.zeros(params.wordVectSpace)
-            for i in range(params.wordVectSpace):
-                tensorResult[i] = inputVect.T.dot(V[i]).dot(inputVect) # x' * V * x (Compute the tensor layer)
-            
-            node.output = utils.actFct(tensorResult + np.dot(W,inputVect)) # Store the result for the backpropagation (What do we store in the output ?? Before or after the activation fct ??)
-        return node.output
     
     def backpropagateRntn(self, V, W, Ws):
         """
