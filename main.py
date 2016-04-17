@@ -22,7 +22,7 @@ miniBatchSize = 1 # TODO = 30
 def main():
     print("Welcome into RNTN implementation 0.1")
     
-    random.seed("MetaMind") # Fixed seed
+    random.seed("MetaMind") # Lucky seed ? Fixed seed for replication
     
     print("Parsing dataset, creating dictionary...")
     # Dictionary initialisation

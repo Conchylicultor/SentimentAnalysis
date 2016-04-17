@@ -11,6 +11,7 @@ import utils
 import params
 import tree
 import vocabulary
+import rntnmodel
 
 def testMath():
     # Test the array multiplication
@@ -27,62 +28,44 @@ def testMath():
     
 
 # Gradient checking
-
-def restoreParams(parametters, shapeV, shapeW, shapeWs):
-    sizeV = np.prod(shapeV)
-    sizeW = np.prod(shapeW)
-    sizeWs = np.prod(shapeWs)
-    V  = np.reshape(parametters[          0:sizeV             ], shapeV)
-    W  = np.reshape(parametters[      sizeV:sizeV+sizeW       ], shapeW)
-    Ws = np.reshape(parametters[sizeV+sizeW:sizeV+sizeW+sizeWs], shapeWs)
     
-    #print("Shape of V: ", V.shape)
-    #print("Shape of W': ", W.shape)
-    #print("Shape of Ws': ", Ws.shape)
-    
-    return V, W, Ws
-    
-def computeNumericalGradient(sample, initialV, initialW, initialWs):
+def computeNumericalGradient(sample, model):
     """
     Add and substract epsilon to compute an aproximation of the gradient
     """
-    
-    # Save shape for later restoration
-    shapeV  = initialV.shape
-    shapeW  = initialW.shape
-    shapeWs = initialWs.shape
+    print("Try computing the numerical gradient...")
     
     # Merge all parametters
-    initialParams = np.concatenate((initialV.ravel(), initialW.ravel(), initialWs.ravel()))
+    initialParams = model.getFlatWeights()
     
     numGrad = np.zeros(initialParams.shape)
-    perturb = np.zeros(initialParams.shape)    
-    epsilon = 1e-4
+    perturb = np.zeros(initialParams.shape)
+    epsilon = 1e-6
+    
+    print(len(numGrad), " params to check (take your time, it will be long...)")
     
     for p in range(len(initialParams)): # Iterate over all our dimentions
         perturb[p] = epsilon # Perturbation on each of the dimentions
         
         # Compute cost at x-e
-        V, W, Ws = restoreParams(initialParams - perturb, shapeV, shapeW, shapeWs)
-        sample.computeRntn(V, W)
-        loss1 = sample.evaluateCost(Ws)
+        model.setFlatWeights(initialParams - perturb)
+        loss1 = model.computeError(sample, True)
         
         # Compute cost at x+e
-        V, W, Ws = restoreParams(initialParams + perturb, shapeV, shapeW, shapeWs)
-        sample.computeRntn(V, W)
-        loss2 = sample.evaluateCost(Ws)
+        model.setFlatWeights(initialParams + perturb)
+        loss2 = model.computeError(sample, True)
         
-        numGrad[p] = (loss2-loss1)/(2*epsilon) # Derivate approximation
+        numGrad[p] = (loss2.getRegCost()-loss1.getRegCost())/(2*epsilon) # Derivate approximation
         
         perturb[p] = 0 # Restore to initial value
         
-        if p%200 == 0:
-            print(p,'/', len(initialParams))
+        if p%20 == 0:
+            print('Progress:', p,'/', len(initialParams))
     
-    numGradV, numGradW, numGradWs = restoreParams(numGrad, shapeV, shapeW, shapeWs) # Extract all gradients
-    return numGradV, numGradW, numGradWs
+    model.setFlatWeights(initialParams)
+    return model.flatWeigthsToGrad(numGrad) # Return a gradient object
     
-def testGradient():
+def testCheckGradient():
     """
     Gradient checking by comparing to an approximation value
     """
@@ -91,32 +74,42 @@ def testGradient():
     sample = tree.Tree("(4 (2 (2 But) (2 (3 (3 (2 believe) (2 it)) (2 or)) (1 not))) (4 (2 ,) (4 (2 it) (4 (4 (2 's) (4 (2 one) (4 (2 of) (4 (4 (2 the) (4 (4 (2 most) (4 (4 beautiful) (3 (2 ,) (3 evocative)))) (2 works))) (2 (2 I) (2 (2 've) (2 seen))))))) (2 .)))))")
     #sample.printTree() # Check parsing and sample loading
     
-    # Random values between [0-1]
-    V  = np.random.rand(params.wordVectSpace, 2*params.wordVectSpace, 2*params.wordVectSpace) # Tensor of the RNTN layer
-    W  = np.random.rand(params.wordVectSpace, 2*params.wordVectSpace) # Regular term of the RNTN layer
-    Ws = np.random.rand(params.nbClass, params.wordVectSpace) # Softmax classifier
-
+    # Initialize the model
+    params.randInitMaxValueNN = 1.0 # Try bigger values for the initial values
+    model = rntnmodel.Model()
+    
     # Compute the gradient using the direct formula
-    sample.computeRntn(V, W)
-    sample.evaluateAllError(Ws, verbose=True) # Check the error at each node
-    compGradV, compGradW, compGradWs = sample.backpropagateRntn(V, W, Ws)
+    model.evaluateSample(sample)
+    analyticGradient = model.backpropagate(sample)
+    analyticGradient = model.addRegularisation(analyticGradient, 1) # Don't forget to add the regularisation
     
     # Compute the gradient using the numerical approximation
-    numGradV, numGradW, numGradWs = computeNumericalGradient(sample, V, W, Ws)
+    numericalGradient = computeNumericalGradient(sample, model)
     
-    # Show results
-    print("Computed  V[3]=\n", compGradV[3])
-    print("Numerical V[3]=\n", numGradV[3])
-    print("Computed  W=\n", compGradW)
-    print("Numerical W=\n", numGradW)
-    print("Computed  Ws=\n", compGradWs)
-    print("Numerical Ws=\n", numGradWs)
+    # Show results (detailled values)
+    #print("Computed  V[3]=\n", numericalGradient.dV[3])
+    #print("Numerical V[3]=\n", analyticGradient.dV[3])
+    #print("Computed  W=\n", numericalGradient.dW)
+    #print("Numerical W=\n", analyticGradient.dW)
+    #print("Computed  b=\n", numericalGradient.db)
+    #print("Numerical b=\n", analyticGradient.db)
+    print("Computed  Ws=\n", numericalGradient.dWs)
+    print("Numerical Ws=\n", analyticGradient.dWs)
+    print("Computed  bs=\n", numericalGradient.dbs)
+    print("Numerical bs=\n", analyticGradient.dbs)
     
-    # Use a some metric to compare
-    distV  = np.linalg.norm(compGradV  - numGradV)  / np.linalg.norm(compGradV  + numGradV)
-    distW  = np.linalg.norm(compGradW  - numGradW)  / np.linalg.norm(compGradW  + numGradW)
-    distWs = np.linalg.norm(compGradWs - numGradWs) / np.linalg.norm(compGradWs + numGradWs)
-    print("Distances: V=", distV, "W=", distW, "Ws=", distWs)
+    # Show results (distance)
+    #distV  = np.linalg.norm(analyticGradient.dV  - numericalGradient.dV)  / np.linalg.norm(analyticGradient.dV  + numericalGradient.dV)
+    #distW  = np.linalg.norm(analyticGradient.dW  - numericalGradient.dW)  / np.linalg.norm(analyticGradient.dW  + numericalGradient.dW)
+    #distb  = np.linalg.norm(analyticGradient.db  - numericalGradient.db)  / np.linalg.norm(analyticGradient.db  + numericalGradient.db)
+    distWs = np.linalg.norm(analyticGradient.dWs - numericalGradient.dWs) / np.linalg.norm(analyticGradient.dWs + numericalGradient.dWs)
+    distbs = np.linalg.norm(analyticGradient.dbs - numericalGradient.dbs) / np.linalg.norm(analyticGradient.dbs + numericalGradient.dbs)
+
+    #print("Distances: V=", distV)
+    #print("Distances: W=", distW)
+    #print("Distances: b=", distb)
+    print("Distances: Ws=", distWs)
+    print("Distances: bs=", distbs)
 
 def testOther():
     """
@@ -129,7 +122,7 @@ def main():
     vocabulary.initVocab()
     
     #testOther()
-    testGradient()
+    testCheckGradient()
     #testMath()
     
     pass
