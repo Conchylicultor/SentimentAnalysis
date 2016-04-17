@@ -142,7 +142,7 @@ class Tree:
         dE_dz = (t - y) # TODO: Check the sign !!
         
         # Gradient of Ws
-        gradientWs = utils.dotxyt(dE_dz, node.output) # (t-y)*a'
+        gradientWs = np.outer(dE_dz, node.output) # (t-y)*a'
         
         # Error coming through the softmax classifier (d*1 vector)
         sigmaSoft = np.multiply(Ws.T.dot(dE_dz), utils.actFctDerFromOutput(node.output)) # Ws' (t_i-y_i) .* f'(x_i) (WARNING: The node.output correspond to the output AFTER the activation fct, so we have f2'(f(x_i)))
@@ -167,8 +167,8 @@ class Tree:
             # Compute the gradient at the current node
             gradientV = np.zeros((params.wordVectSpace, 2*params.wordVectSpace, 2*params.wordVectSpace))
             for k in range(params.wordVectSpace):
-                gradientV[k] = sigmaCom[k] * utils.dotxyt(bc, bc) # 2d*2d matrix
-            gradientW = utils.dotxyt(sigmaCom, bc) # d*2d matrix
+                gradientV[k] = sigmaCom[k] * np.outer(bc, bc) # 2d*2d matrix
+            gradientW = np.outer(sigmaCom, bc) # d*2d matrix
             
             # Compute the error at the bottom of the layer
             sigmaDown = W.T.dot(sigmaCom) # (regular term)

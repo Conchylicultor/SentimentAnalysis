@@ -23,14 +23,6 @@ def softClas(Ws, a):
     """
     return softmax(np.dot(Ws, a))
 
-def dotxyt(x, y):
-    """
-    Return the result of x*y'
-    Takes two numpy array in parametter. This function is usefull because
-    the default dot product for one dimentional array does not work
-    """
-    return np.asarray(np.asmatrix(x).T * np.asmatrix(y)) # Is an x.size*y.size array
-
 def actFct(x):
     """
     The NN activation function (here tanh)

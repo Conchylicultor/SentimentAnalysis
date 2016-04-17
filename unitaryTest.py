@@ -6,6 +6,7 @@ as some parts of the script
 """ 
 
 import numpy as np
+import time # Checking performances
 import utils
 import params
 import tree
@@ -15,7 +16,7 @@ def testMath():
     # Test the array multiplication
     x = np.array([1, 2, 3])
     y = np.array([4, 5, 6])
-    xyT = utils.dotxyt(x, y)
+    xyT = np.outer(x, y)
     print("x*y': ", xyT)
     print("Type of x*y': ", type(xyT))
     print("Type of x: ", type(x))
@@ -115,7 +116,6 @@ def testGradient():
     distW  = np.linalg.norm(compGradW  - numGradW)  / np.linalg.norm(compGradW  + numGradW)
     distWs = np.linalg.norm(compGradWs - numGradWs) / np.linalg.norm(compGradWs + numGradWs)
     print("Distances: V=", distV, "W=", distW, "Ws=", distWs)
-
 
 def testOther():
     """
