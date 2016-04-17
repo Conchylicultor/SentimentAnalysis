@@ -18,7 +18,7 @@ class Model:
         # Learning parametters
         
         self.regularisationTerm = 0.0001 # Lambda
-        self.learningRate = 0.1 # TODO: Replace by AdaGrad !!
+        self.learningRate = 0.01 # TODO: Replace by AdaGrad !!
         
         # Weights
         
