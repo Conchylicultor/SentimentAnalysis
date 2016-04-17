@@ -16,7 +16,7 @@ import vocabulary
 # Parametters
 nbEpoch = 150
 learningRate = 0.1 # TODO: Replace by AdaGrad !!
-miniBatchSize = 1 #30
+miniBatchSize = 1 # TODO = 30
 regularisationTerm = 0.0001 # Lambda
 
 def main():
@@ -24,7 +24,7 @@ def main():
     
     print("Parsing dataset, creating dictionary...")
     # Dictionary initialisation
-    vocabulary.initVocab()
+    vocabulary.initVocab() # Contain L
     
     # Loading dataset
     trainingSet = utils.loadDataset("trees/train.txt");
@@ -63,7 +63,7 @@ def main():
         for trainingSample in trainingSet: # Select next the training sample
             # Forward pass
             rntnOutput = trainingSample.computeRntn(V, W) # Evaluate the model recursivelly
-            finalOutput = utils.softClas(Ws, rntnOutput) # Use softmax classifier to get the final prediction
+            # finalOutput = utils.softClas(Ws, rntnOutput) # Use softmax classifier to get the final prediction
             
             # Backward pass (Compute the gradients)
             gradientV, gradientW, gradientWs = trainingSample.backpropagateRntn(V, W, Ws)
@@ -80,6 +80,7 @@ def main():
             Ws -= learningRate * gradientWs
             # L is updated when calling backpropagateRntn
             
+            # Plot progress every 10% of dataset covered
             if nbSampleCovered % np.floor(len(trainingSet)/10) == 0:
                 print(nbSampleCovered / len(trainingSet), "% of dataset covered")
             nbSampleCovered += 1

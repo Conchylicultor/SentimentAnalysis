@@ -13,7 +13,7 @@ def softmax(w):
     """
     Straightforward implementation of softmax function
     """
-    e = np.exp(np.array(w))
+    e = np.exp(w)
     dist = e / np.sum(e)
     return dist
 
