@@ -61,24 +61,18 @@ def main():
             # Forward pass
             model.evaluateSample(trainingSample) # Compute the output recursivelly
             
-            # Backward pass (Compute the gradients)
-            gradientV, gradientW, gradientWs = trainingSample.backpropagateRntn(V, W, Ws)
+            # Backward pass (Compute the gradients for the current sample)
+            gradient = model.backpropagate(trainingSample)
             
             # Add regularisation (we don't care about the factor 2 contained in regularisationTerm ? < could be useful for gradient checking)
-            gradientV  += regularisationTerm * miniBatchSize * V
-            gradientW  += regularisationTerm * miniBatchSize * W
-            gradientWs += regularisationTerm * miniBatchSize * Ws
-            # What about L ??
+            gradient = model.addRegularisation(gradient, regularisationTerm * miniBatchSize)
             
             # Update the weights
-            V  -= learningRate * gradientV # Step in the oposite direction of the gradient
-            W  -= learningRate * gradientW
-            Ws -= learningRate * gradientWs
-            # L is updated when calling backpropagateRntn
+            model.updateWeights(gradient)
             
             # Plot progress every 10% of dataset covered
             if nbSampleCovered % (len(trainingSet)//10) == 0:
-                print(nbSampleCovered*100 // len(trainingSet), "% of dataset covered")
+                print(nbSampleCovered*100 // len(trainingSet) + 1, "% of dataset covered")
             nbSampleCovered += 1
         
         # Compute new testing error
