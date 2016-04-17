@@ -28,6 +28,7 @@ def actFctDerFromOutput(x):
     Derivate of the activation function
     WARNING: In this version, we take as input an output value 
     after the activation function (x = tanh(output of the tensor)).
+    This works because the derivate of tanh is function of tanh
     """
     return 1.0 - x**2
 

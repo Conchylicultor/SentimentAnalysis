@@ -45,11 +45,11 @@ def main():
     model = rntnmodel.Model()
     
     # Plot the initial error (wait less time before seing if our model is learning)
-    print("Initial errors...")
-    trError = model.computeError(trainingSet, True)
-    print("Train error: ", trError)
-    teError = model.computeError(testingSet, True)
-    print("Test  error: ", teError)
+    #print("Initial errors...")
+    #trError = model.computeError(trainingSet, True)
+    #print("Train error: ", trError)
+    #teError = model.computeError(testingSet, True)
+    #print("Test  error: ", teError)
     
     print("Start training...")
     # TODO: Include the training in the cross-validation loop (tune parametters)

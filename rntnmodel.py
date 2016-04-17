@@ -116,65 +116,48 @@ class Model:
         #node.printInd("dEdz=", dE_dz)
         
         # Gradient of Ws
-        gradient.dWs = np.outer(dE_dz, node.output) # (t-y)*a'
+        gradient.dWs = np.outer(dE_dz, node.output) # (t-y)*aT
         gradient.dbs = dE_dz
         
         #node.printInd("dbs=", gradient.dbs)
         #node.printInd("dWs=", gradient.dWs)
         
-        if node.word is None:
-            gradient += self._backpropagate(node.l, None)
-            gradient += self._backpropagate(node.r, None)
+        # Error coming through the softmax classifier (d*1 vector)
+        sigmaSoft = np.dot(self.Ws.T, dE_dz) # WsT (t_i-y_i)
+        if sigmaCom is None: # Root node
+            sigmaCom = sigmaSoft # Only softmax error is incoming
+        else:
+            sigmaCom += sigmaSoft # Otherwise, we also add the incoming error from the upper node
+        
+        # If the node is a leaf, we do not go through the activation fct
+        
+        if node.word is None: # Intermediate node, we continue the backpropagation
+            # Backpropagate through the activation function
+            # TODO: Check f'(sigS + sigD) or f'(sigS) + f'(sigD)
+            sigmaCom = np.multiply(sigmaCom, utils.actFctDerFromOutput(node.output)) # sigma .* f'(x_i) (WARNING: The node.output correspond to the output AFTER the activation fct, so we have f2'(f(x_i)))
+        
+            # Construct the incoming output
+            bc = np.concatenate((node.l.output, node.r.output)) # TODO: Right order ?
+            
+            # Compute the gradient of the tensor
+            gradient.dV = np.zeros((params.wordVectSpace, 2*params.wordVectSpace, 2*params.wordVectSpace))
+            for k in range(params.wordVectSpace):
+                gradient.dV[k] = sigmaCom[k] * np.outer(bc, bc) # 2d*2d matrix (*d after the loop)
+            gradient.dW = np.outer(sigmaCom, bc) # d*2d matrix
+            gradient.db = sigmaCom # d matrix
+            
+            # Compute the error at the bottom of the layer
+            sigmaDown = np.dot(self.W.T, sigmaCom) # (regular term)
+            for k in range(params.wordVectSpace): # Compute S (tensor term)
+                sigmaDown += sigmaCom[k] * (self.V[k] + self.V[k].T).dot(bc)
+            
+            # Propagate the error down to the next nodes
+            d = params.wordVectSpace
+            gradient += self._backpropagate(node.l, sigmaDown[0:d])
+            gradient += self._backpropagate(node.r, sigmaDown[d:2*d]) # Sum all gradients
         else: # Leaf: Update L
-            pass
-            
-        
-        ## Error coming through the softmax classifier (d*1 vector)
-        #sigmaSoft = np.multiply(self.Ws.T.dot(dE_dz), utils.actFctDerFromOutput(node.output)) # Ws' (t_i-y_i) .* f'(x_i) (WARNING: The node.output correspond to the output AFTER the activation fct, so we have f2'(f(x_i)))
-        #if sigmaCom is None: # Root node
-            #sigmaCom = sigmaSoft # Only softmax error is incoming
-        #else:
-            #sigmaCom += sigmaSoft # Otherwise, we also add the incoming error from the previous node
-        
-        #gradientV = None
-        #gradientW = None
-        
-        #if(node.word != None): # Leaf
-            ## TODO: Backpropagate L too ??? Modify the vector word space ???
-            #node.word.vect -= sigmaCom # Oposite direction of gradient
-            #pass # Return empty value (gradient does not depend of V nor W)
-        #else: # Go deeper
-            ## Construct the incoming output
-            #b = node.l.output
-            #c = node.r.output
-            #bc = np.concatenate((b, c))
-            
-            ## Compute the gradient at the current node
-            #gradientV = np.zeros((params.wordVectSpace, 2*params.wordVectSpace, 2*params.wordVectSpace))
-            #for k in range(params.wordVectSpace):
-                #gradientV[k] = sigmaCom[k] * np.outer(bc, bc) # 2d*2d matrix
-            #gradientW = np.outer(sigmaCom, bc) # d*2d matrix
-            
-            ## Compute the error at the bottom of the layer
-            #sigmaDown = self.W.T.dot(sigmaCom) # (regular term)
-            #for k in range(params.wordVectSpace): # Compute S (tensor term)
-                #sigmaDown += sigmaCom[k] * (self.V[k] + self.V[k].T).dot(bc)
-            #sigmaDown = np.multiply(sigmaDown, utils.actFctDerFromOutput(bc)) # Activation fct
-            ## TODO: What about the activation function (here, after, before ?), check content
-            
-            #d = params.wordVectSpace
-            
-            ## Propagate the error down to the next nodes
-            #gradientVSub, gradientWSub, gradientWsSub = self._backpropagateRntn(node.l, V, W, Ws, sigmaDown[0:d])
-            #if gradientVSub is not None:
-                #gradientV += gradientVSub
-                #gradientW += gradientWSub # If non leaf, gradientWSub shouldn't be null either
-            #gradientWs += gradientWsSub
-            #gradientVSub, gradientWSub, gradientWsSub = self._backpropagateRntn(node.r, V, W, Ws, sigmaDown[d:2*d])
-            #if gradientVSub is not None:
-                #gradientV += gradientVSub
-                #gradientW += gradientWSub
-            #gradientWs += gradientWsSub
+            # dL contain the list of all words which will be modified this pass
+            gradient.dL = [(node.word.idx, np.copy(sigmaCom))] # Copy probably useless, sigmaCom probably cannot be modified anymore on the other nodes so we could directly pass the reference
         
         return gradient
     
@@ -191,9 +174,9 @@ class Model:
         factor = 2 * self.regularisationTerm * miniBatchSize # Factor 2 for the derivate of the square
         
         # Tensor layer
-        #gradient.dV  += factor*self.V # Tensor of the RNTN layer
-        #gradient.dW  += factor*self.W # Regular term of the RNTN layer
-        #gradient.db  += factor*self.b # Bias for the regular term of the RNTN layer
+        gradient.dV  += factor*self.V # Tensor of the RNTN layer
+        gradient.dW  += factor*self.W # Regular term of the RNTN layer
+        gradient.db  += factor*self.b # Bias for the regular term of the RNTN layer
         
         # Softmax
         gradient.dWs += factor*self.Ws # Softmax classifier
@@ -212,17 +195,17 @@ class Model:
         # TODO: Adagrad
         
         # Tensor layer
-        #self.V  += self.learningRate * gradient.dV
-        #self.W  += self.learningRate * gradient.dW
-        #self.b  += self.learningRate * gradient.db
+        self.V  += self.learningRate * gradient.dV
+        self.W  += self.learningRate * gradient.dW
+        self.b  += self.learningRate * gradient.db
         
         # Softmax
         self.Ws += self.learningRate * gradient.dWs
         self.bs += self.learningRate * gradient.dbs
         
         # Words
-        #for elem in gradient.dL: # Add every word gradient individually
-        #    self.L[elem.i,:] += self.learningRate * elem.dl
+        for elem in gradient.dL: # Add every word gradient individually
+            self.L[elem[0],:] += self.learningRate * elem[1]
         
     def computeError(self, dataset, compute = False):
         """
@@ -390,9 +373,10 @@ class ModelGrad:
         Add two gradient together
         """
         # Tensor layer
-        #self.dV  += gradient.dV # Tensor of the RNTN layer
-        #self.dW  += gradient.dW # Regular term of the RNTN layer
-        #self.db  += gradient.db # Bias for the regular term of the RNTN layer
+        if gradient.dV is not None: # Case for the leaf (indead, only depend of the softmax error)
+            self.dV  += gradient.dV # Tensor of the RNTN layer
+            self.dW  += gradient.dW # Regular term of the RNTN layer
+            self.db  += gradient.db # Bias for the regular term of the RNTN layer
         
         # Softmax (Computed in any case)
         self.dWs += gradient.dWs # Softmax classifier

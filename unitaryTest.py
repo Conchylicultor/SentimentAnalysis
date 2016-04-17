@@ -59,7 +59,7 @@ def computeNumericalGradient(sample, model):
         
         perturb[p] = 0 # Restore to initial value
         
-        if p%20 == 0:
+        if p%50 == 0:
             print('Progress:', p,'/', len(initialParams))
     
     model.setFlatWeights(initialParams)
