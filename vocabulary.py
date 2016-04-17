@@ -14,7 +14,8 @@ class Word:
     """
     def __init__(self, word):
         self.string = word
-        self.vect = params.randInitMaxValueWords * np.random.rand(params.wordVectSpace) # Initialisation to small values
+        #self.vect = params.randInitMaxValueWords * np.random.rand(params.wordVectSpace) # Initialisation to small values
+        self.vect = np.random.normal(0.0, params.randInitMaxValueWords, params.wordVectSpace) # Initialisation to small values
 
 class Vocab:
     def __init__(self, filename=None):

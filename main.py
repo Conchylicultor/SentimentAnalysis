@@ -81,8 +81,8 @@ def main():
             # L is updated when calling backpropagateRntn
             
             # Plot progress every 10% of dataset covered
-            if nbSampleCovered % np.floor(len(trainingSet)/10) == 0:
-                print(nbSampleCovered / len(trainingSet), "% of dataset covered")
+            if nbSampleCovered % (len(trainingSet)//10) == 0:
+                print(nbSampleCovered*100 // len(trainingSet), "% of dataset covered")
             nbSampleCovered += 1
         
         # Compute new testing error

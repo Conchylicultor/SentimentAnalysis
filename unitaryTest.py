@@ -48,8 +48,8 @@ def computeNumericalGradient(sample, initialV, initialW, initialWs):
     """
     
     # Save shape for later restoration
-    shapeV = initialV.shape
-    shapeW = initialW.shape
+    shapeV  = initialV.shape
+    shapeW  = initialW.shape
     shapeWs = initialWs.shape
     
     # Merge all parametters
@@ -76,8 +76,8 @@ def computeNumericalGradient(sample, initialV, initialW, initialWs):
         
         perturb[p] = 0 # Restore to initial value
         
-        if p%100 == 0:
-            print(p)
+        if p%200 == 0:
+            print(p,'/', len(initialParams))
     
     numGradV, numGradW, numGradWs = restoreParams(numGrad, shapeV, shapeW, shapeWs) # Extract all gradients
     return numGradV, numGradW, numGradWs

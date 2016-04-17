@@ -114,7 +114,7 @@ class Tree:
             # Compute the tensor term
             tensorResult = np.zeros(params.wordVectSpace)
             for i in range(params.wordVectSpace):
-                tensorResult[i] = inputVect.T.dot(V[i]).dot(inputVect) # x' * V * x
+                tensorResult[i] = inputVect.T.dot(V[i]).dot(inputVect) # x' * V * x (Compute the tensor layer)
             
             node.output = utils.actFct(tensorResult + np.dot(W,inputVect)) # Store the result for the backpropagation (What do we store in the output ?? Before or after the activation fct ??)
         return node.output

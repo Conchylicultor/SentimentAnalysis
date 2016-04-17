@@ -4,3 +4,6 @@ Implementation of the RNTN from Standford (http://nlp.stanford.edu/sentiment/) t
 Requirement:
 * Python3
 * Numpy
+
+The parametters are defined on params.py and on main.py
+
