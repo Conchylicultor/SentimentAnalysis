@@ -275,9 +275,9 @@ class Model:
         Return all params concatenated in a big 1d array
         """
         weights = np.concatenate((\
-        #    self.V.ravel(),\
-        #    self.W.ravel(),\
-        #    self.b.ravel(),\
+           self.V.ravel(),\
+           self.W.ravel(),\
+           self.b.ravel(),\
             self.Ws.ravel(),\
             self.bs.ravel()\
             ))
@@ -291,18 +291,18 @@ class Model:
         endIdx = 0 # Useful when commenting (for partial gradient checking)
         
         initIdx = 0
-        #endIdx = self.V.size
-        #self.V = np.reshape(weights[initIdx:endIdx], self.V.shape)
+        endIdx = self.V.size
+        self.V = np.reshape(weights[initIdx:endIdx], self.V.shape)
         
-        #initIdx += self.V.size
-        #endIdx  += self.W.size
-        #self.W = np.reshape(weights[initIdx:endIdx], self.W.shape)
+        initIdx += self.V.size
+        endIdx  += self.W.size
+        self.W = np.reshape(weights[initIdx:endIdx], self.W.shape)
         
-        #initIdx += self.W.size
-        #endIdx  += self.b.size
-        #self.b = np.reshape(weights[initIdx:endIdx], self.b.shape)
+        initIdx += self.W.size
+        endIdx  += self.b.size
+        self.b = np.reshape(weights[initIdx:endIdx], self.b.shape)
         
-        #initIdx += self.b.size
+        initIdx += self.b.size
         endIdx  += self.Ws.size
         self.Ws = np.reshape(weights[initIdx:endIdx], self.Ws.shape)
         
@@ -318,18 +318,18 @@ class Model:
         endIdx = 0 # Useful when commenting (for partial gradient checking)
         
         initIdx = 0
-        #endIdx = self.V.size
-        #gradient.dV = np.reshape(flatWeigths[initIdx:endIdx], self.V.shape)
+        endIdx = self.V.size
+        gradient.dV = np.reshape(flatWeigths[initIdx:endIdx], self.V.shape)
         
-        #initIdx += self.V.size
-        #endIdx  += self.W.size
-        #gradient.dW = np.reshape(flatWeigths[initIdx:endIdx], self.W.shape)
+        initIdx += self.V.size
+        endIdx  += self.W.size
+        gradient.dW = np.reshape(flatWeigths[initIdx:endIdx], self.W.shape)
         
-        #initIdx += self.W.size
-        #endIdx  += self.b.size
-        #gradient.db = np.reshape(flatWeigths[initIdx:endIdx], self.b.shape)
+        initIdx += self.W.size
+        endIdx  += self.b.size
+        gradient.db = np.reshape(flatWeigths[initIdx:endIdx], self.b.shape)
         
-        #initIdx += self.b.size
+        initIdx += self.b.size
         endIdx  += self.Ws.size
         gradient.dWs = np.reshape(flatWeigths[initIdx:endIdx], self.Ws.shape)
         

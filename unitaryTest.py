@@ -39,27 +39,28 @@ def computeNumericalGradient(sample, model):
     initialParams = model.getFlatWeights()
     
     numGrad = np.zeros(initialParams.shape)
-    perturb = np.zeros(initialParams.shape)
     epsilon = 1e-6
     
     print(len(numGrad), " params to check (take your time, it will be long...)")
     
     for p in range(len(initialParams)): # Iterate over all our dimentions
-        perturb[p] = epsilon # Perturbation on each of the dimentions
+        save = initialParams[p]
         
         # Compute cost at x-e
-        model.setFlatWeights(initialParams - perturb)
+        initialParams[p] -= epsilon# Perturbation on each of the dimentions
+        model.setFlatWeights(initialParams)
         loss1 = model.computeError(sample, True)
         
         # Compute cost at x+e
-        model.setFlatWeights(initialParams + perturb)
+        initialParams[p] = save + epsilon
+        model.setFlatWeights(initialParams)
         loss2 = model.computeError(sample, True)
+        
+        initialParams[p] = save # Restore to initial value
         
         numGrad[p] = (loss2.getRegCost()-loss1.getRegCost())/(2*epsilon) # Derivate approximation
         
-        perturb[p] = 0 # Restore to initial value
-        
-        if p%50 == 0:
+        if p%200 == 0:
             print('Progress:', p,'/', len(initialParams))
     
     model.setFlatWeights(initialParams)
@@ -87,27 +88,27 @@ def testCheckGradient():
     numericalGradient = computeNumericalGradient(sample, model)
     
     # Show results (detailled values)
-    #print("Computed  V[3]=\n", numericalGradient.dV[3])
-    #print("Numerical V[3]=\n", analyticGradient.dV[3])
-    #print("Computed  W=\n", numericalGradient.dW)
-    #print("Numerical W=\n", analyticGradient.dW)
-    #print("Computed  b=\n", numericalGradient.db)
-    #print("Numerical b=\n", analyticGradient.db)
+    print("Computed  V[3]=\n", numericalGradient.dV[3])
+    print("Numerical V[3]=\n", analyticGradient.dV[3])
+    print("Computed  W=\n", numericalGradient.dW)
+    print("Numerical W=\n", analyticGradient.dW)
+    print("Computed  b=\n", numericalGradient.db)
+    print("Numerical b=\n", analyticGradient.db)
     print("Computed  Ws=\n", numericalGradient.dWs)
     print("Numerical Ws=\n", analyticGradient.dWs)
     print("Computed  bs=\n", numericalGradient.dbs)
     print("Numerical bs=\n", analyticGradient.dbs)
     
     # Show results (distance)
-    #distV  = np.linalg.norm(analyticGradient.dV  - numericalGradient.dV)  / np.linalg.norm(analyticGradient.dV  + numericalGradient.dV)
-    #distW  = np.linalg.norm(analyticGradient.dW  - numericalGradient.dW)  / np.linalg.norm(analyticGradient.dW  + numericalGradient.dW)
-    #distb  = np.linalg.norm(analyticGradient.db  - numericalGradient.db)  / np.linalg.norm(analyticGradient.db  + numericalGradient.db)
+    distV  = np.linalg.norm(analyticGradient.dV  - numericalGradient.dV)  / np.linalg.norm(analyticGradient.dV  + numericalGradient.dV)
+    distW  = np.linalg.norm(analyticGradient.dW  - numericalGradient.dW)  / np.linalg.norm(analyticGradient.dW  + numericalGradient.dW)
+    distb  = np.linalg.norm(analyticGradient.db  - numericalGradient.db)  / np.linalg.norm(analyticGradient.db  + numericalGradient.db)
     distWs = np.linalg.norm(analyticGradient.dWs - numericalGradient.dWs) / np.linalg.norm(analyticGradient.dWs + numericalGradient.dWs)
     distbs = np.linalg.norm(analyticGradient.dbs - numericalGradient.dbs) / np.linalg.norm(analyticGradient.dbs + numericalGradient.dbs)
 
-    #print("Distances: V=", distV)
-    #print("Distances: W=", distW)
-    #print("Distances: b=", distb)
+    print("Distances: V=", distV)
+    print("Distances: W=", distW)
+    print("Distances: b=", distb)
     print("Distances: Ws=", distWs)
     print("Distances: bs=", distbs)
 
