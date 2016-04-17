@@ -16,9 +16,8 @@ import rntnmodel
 
 # Parametters
 nbEpoch = 30
-learningRate = 0.1 # TODO: Replace by AdaGrad !!
 miniBatchSize = 1 # TODO = 30
-regularisationTerm = 0.0001 # Lambda
+
 
 def main():
     print("Welcome into RNTN implementation 0.1")
@@ -45,6 +44,13 @@ def main():
     # Creating the model
     model = rntnmodel.Model()
     
+    # Plot the initial error (wait less time before seing if our model is learning)
+    print("Initial errors...")
+    trError = model.computeError(trainingSet, True)
+    print("Train error: ", trError)
+    teError = model.computeError(testingSet, True)
+    print("Test  error: ", teError)
+    
     print("Start training...")
     # TODO: Include the training in the cross-validation loop (tune parametters)
     # Main loop
@@ -64,8 +70,8 @@ def main():
             # Backward pass (Compute the gradients for the current sample)
             gradient = model.backpropagate(trainingSample)
             
-            # Add regularisation (we don't care about the factor 2 contained in regularisationTerm ? < could be useful for gradient checking)
-            gradient = model.addRegularisation(gradient, regularisationTerm * miniBatchSize)
+            # Add regularisation (the factor 2 will be multiplied < is useful for gradient checking)
+            gradient = model.addRegularisation(gradient, miniBatchSize)
             
             # Update the weights
             model.updateWeights(gradient)
@@ -77,17 +83,17 @@ def main():
         
         # Compute new testing error
         print("Compute errors...")
-        trError = utils.computeError(trainingSet, V, W, Ws, regularisationTerm)
-        teError = utils.computeError(testingSet,  V, W, Ws, regularisationTerm, True)
-        print("Train error: ", trError, " | Test error: ",  teError)
+        trError = model.computeError(trainingSet)
+        print("Train error: ", trError)
+        teError = model.computeError(testingSet, True)
+        print("Test  error: ", teError)
         
         # Saving the model (every X epoch)
         print("Saving model...")
-        vocabulary.vocab.save("save/dict")
-        np.savez("save/model", V=V, W=W, Ws=Ws)
+        model.saveModel("save/train") # Also save the dictionary
         
     print("Training complete, validating...")
-    vaError = utils.computeError(validationSet,  V, W, Ws, regularisationTerm, True)
+    vaError = utils.computeError(validationSet, True)
     print("Validation error: ", vaError)
     
 

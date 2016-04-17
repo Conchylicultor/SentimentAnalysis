@@ -15,6 +15,12 @@ class Model:
         """
         WARNING: Has to be called after loading the vocabulary
         """
+        # Learning parametters
+        
+        self.regularisationTerm = 0.0001 # Lambda
+        self.learningRate = 0.1 # TODO: Replace by AdaGrad !!
+        
+        # Weights
         
         # TODO: Possibility of loading from file (default initialize randomly)
         # Initialisation with small values (best solution ??)
@@ -31,7 +37,14 @@ class Model:
         # Words << Contained in the vocab variable 
         self.L  = np.random.normal(0.0, params.randInitMaxValueWords, (vocabulary.vocab.length(), params.wordVectSpace))# Vocabulary (List of N words on vector representation) (Indexing over the first variable: more perfs!)
         
-
+    def _predictNode(self, node):
+        """
+        Return the softmax sentiment prediction for the given word vector
+        WARNING: The node output(after activation fct) has to be already computed
+        """
+        z = np.dot(self.Ws, node.output) + self.bs
+        return utils.softmax(z)
+        
     def evaluateSample(self, sample):
         """
         Evaluate the vector of the complete sentence and compute (and store) all the intermediate
@@ -71,13 +84,14 @@ class Model:
     
     def backpropagate(self, sample):
         """
-        Compute the derivate at each level and return the sum of it
+        Compute the derivate at each level of the sample and return the sum
+        of it (stored in a gradient object)
         """
         # Notations:
         #   a: Output at root node (after activation)
-        #   z: Output before softmax (z=Ws*a)
+        #   z: Output before softmax (z=Ws*a + bs)
         #   y: Output after softmax, final prediction (y=softmax(z))
-        #   E: Cost of the current prediction (E = cost(softmax(Ws*a)) = cost(y))
+        #   E: Cost of the current prediction (E = cost(softmax(Ws*a + bs)) = cost(y))
         #   t: Gound truth prediction (labelVect)
         # We then have:
         #   t -> a -> t -> a -> ... t -> a(last layer) -> z (projection on dim 5) -> y (softmax prediction) -> E (cost)
@@ -93,7 +107,7 @@ class Model:
         # Compute error coming from the softmax classifier on the current node
         # dE/dz = (t - softmax(z)) Derivative of the cost with respect to the softmax classifier input
         t = node.labelVect()
-        y = utils.softClas(self.Ws, node.output)
+        y = self._predictNode(node)
         dE_dz = (t - y) # TODO: Check the sign !!
         
         #node.printInd("o=", node.output)
@@ -164,7 +178,7 @@ class Model:
         
         return gradient
     
-    def addRegularisation(self, gradient, regularisationTerm):
+    def addRegularisation(self, gradient, miniBatchSize):
         """
         Add the regularisation term to the givengradient and
         return it (The given gradient is also modified)
@@ -174,7 +188,7 @@ class Model:
         Args:
             regularisationTerm: The lambda term
         """
-        factor = 2*regularisationTerm # Factor 2 for the derivate of the square
+        factor = 2 * self.regularisationTerm * miniBatchSize # Factor 2 for the derivate of the square
         
         # Tensor layer
         #gradient.dV  += factor*self.V # Tensor of the RNTN layer
@@ -197,18 +211,87 @@ class Model:
         """
         
         # Tensor layer
-        #self.V  += gradient.dV
-        #self.W  += gradient.dW
-        #self.b  += gradient.db
+        #self.V  += self.learningRate * gradient.dV
+        #self.W  += self.learningRate * gradient.dW
+        #self.b  += self.learningRate * gradient.db
         
         # Softmax
-        self.Ws += gradient.dWs
-        self.bs += gradient.dbs
+        self.Ws += self.learningRate * gradient.dWs
+        self.bs += self.learningRate * gradient.dbs
         
         # Words
         #for elem in gradient.dL: # Add every word gradient individually
-        #    self.L[elem.i,:] += elem.dl
+        #    self.L[elem.i,:] += self.learningRate * elem.dl
+        
+    def computeError(self, dataset, compute = False):
+        """
+        Evaluate the cost error of the given dataset using the parametters
+        Args:
+            dataset: Collection of the sample to evaluate (can also be a single element)
+            compute: If false, the dataset must have completed the forward pass with the given parametters
+            before calling this function (the output will not be computed in this fct but the old one will 
+            be used)
+        Return:
+            TODO: Return also the % of correctly classified labels (and the number) (by node ?? or just the root ?? < Both)
+            In the paper, they uses 4 metrics (+/- or fine grained ; all or just root)
+        """
+        
+        # If dataset is singleton, we encapsulate is in a list
+        if not isinstance(dataset, list):
+            dataset = [dataset]
+        
+        # Evaluate error for each given sample
+        error = ModelError() # Will store the different metrics
+        for sample in dataset:
+            if compute: # If not done yet, compute the Rntn
+                self.evaluateSample(sample)
+            error += self._evaluateCostNode(sample.root) # Normalize also by number of nodes ?? << Doesn't seems to be the case in the paper
+            error.nbOfSample += 1
+        
+        # Normalize the cost by the number of sample
+        error.cost /= error.nbOfSample
+        
+        # Add regularisation (No regularisation for the bias term)
+        costReg = self.regularisationTerm * (np.sum(self.V*self.V) + np.sum(self.W*self.W) + np.sum(self.Ws*self.Ws)) # Numpy array so element-wise multiplication (What about L)
+        error.regularisation += costReg # Add regularisation (add N times (for each samples), then normalized)
+        
+        return error
+    
+    def _evaluateCostNode(self, node):
+        """
+        Recursivelly compute the error
+        """
+        error = ModelError()
+        
+        # Cost at the current node
+        y = self._predictNode(node) # Softmax prediction
+        error.cost     = np.log(y[node.label]) # We only take the cell which correspond to the label, all other terms are null
+        labelPredicted = np.argmax(y) # Predicted label
+        error.nbOfCorrectLabel = int(labelPredicted == node.label)
+        error.nbOfNodes = 1
 
+        ## Debug infos
+        #if node.word is not None: # Not a leaf, we continue exploring the tree
+            #node.printInd(node.word.string)
+        #node.printInd("Individual: ", error)
+        #node.printInd("(label,prediction) = (", node.label,  ",", labelPredicted, ")")
+        #node.printInd(y)
+            
+        if node.word is None: # Not a leaf, we continue exploring the tree
+            error += self._evaluateCostNode(node.l) # Left
+            error += self._evaluateCostNode(node.r) # Right
+        
+        #node.printInd("Collective: ", error)
+        return error
+    
+    def saveModel(self, destination):
+        """
+        Save the model at the given destination (the destination should not contain
+        the extension)
+        This save both model parametters and dictionary
+        """
+        vocabulary.vocab.save(destination + "_dict")
+        np.savez(destination + "_model", V=self.V, W=self.W, b=self.b, Ws=self.Ws, bs=self.bs, L=self.L)
 
 class ModelGrad:
     """
@@ -241,10 +324,50 @@ class ModelGrad:
         self.dWs += gradient.dWs # Softmax classifier
         self.dbs += gradient.dbs # Bias of the softmax classifier
         
-        # Words << Contained in the vocab variable
+        # Words
         if self.dL is None: # Backpropagate the dL gradient on the upper nodes
             self.dL = gradient.dL
         elif gradient.dL is not None: # In this case, we merge the two lists
             self.dL  += gradient.dL
+        
+        return self
+
+class ModelError:
+    """
+    One struct which contain the differents errors (cost, nb of correct predictions,...)
+    """
+
+    def __init__(self):
+        # Variables allowing us to normalize the cost errors
+        self.nbOfNodes  = 0
+        self.nbOfSample = 0
+        
+        self.cost = 0 # Regular cost (formula)
+        self.regularisation = 0 # WARNING: Is added only one times for all the samples (avoid adding at each loop)
+        self.nbOfCorrectLabel = 0 # Nb of corrected predicted labels
+        # Could also add the binary prediction (just +/- and the predictions to the root)
+    
+    def __str__(self):
+        """
+        Show diverse informations
+        """
+        return "Cost=%4f | CostReg=%4f | Percent=%2f%% (%d/%d) | NbOfSamples=%d" % (\
+            self.cost/(self.nbOfSample+1), # We add the +1 because if we try to plot inside a tree, it will divide by 0 \
+            self.cost + self.regularisation,\
+            self.nbOfCorrectLabel*100/self.nbOfNodes,\
+            self.nbOfCorrectLabel,\
+            self.nbOfNodes,\
+            self.nbOfSample)
+        
+    
+    def __iadd__(self, error):
+        """
+        Add two errors together
+        """
+        self.nbOfNodes          += error.nbOfNodes
+        self.nbOfSample         += error.nbOfSample
+        self.cost               += error.cost
+        self.regularisation     += error.regularisation
+        self.nbOfCorrectLabel   += error.nbOfCorrectLabel
         
         return self

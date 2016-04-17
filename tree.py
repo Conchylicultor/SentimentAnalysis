@@ -104,58 +104,6 @@ class Tree:
                 break
         return positionBreak
         
-    def evaluateCost(self, Ws):
-        """
-        Recursivelly compute the cost of each node and sum up the result
-        """
-        return self._evaluateCost(self.root, Ws)
-    
-    def _evaluateCost(self, node, Ws):
-        currentCost = np.log(utils.softClas(Ws, node.output) [node.label]) # We only take the cell which correspond to the label, all other terms are null
-
-        if(node.word == None): # Not a leaf, we continue exploring the tree
-            currentCost += self._evaluateCost(node.l, Ws) # Left
-            currentCost += self._evaluateCost(node.r, Ws) # Right
-        return currentCost
-    
-    def evaluateAllError(self, Ws, verbose=False):
-        """
-        Return the error recursively (nb of not correctly classified label)
-        """
-        nbOfNodes = self._nbOfNodes(self.root)
-        if verbose:
-            print(nbOfNodes, "nodes", "(label,predLab) -> result, cumul")
-        return self._evaluateAllError(self.root, Ws, verbose, 0), nbOfNodes
-    
-    def _evaluateAllError(self, node, Ws, verbose, level):
-        # Cost at the current node
-        y = utils.softClas(Ws, node.output) # Softmax prediction
-        currentCost    = np.log(y[node.label]) # We only take the cell which correspond to the label, all other terms are null
-        labelPredicted = np.argmax(y) # Predicted label
-        isLabelCorrect = (labelPredicted == node.label)
-        nbLabelCorrect = int(isLabelCorrect)
-
-        if verbose: # Plot infos of the current node
-            for i in range(level):
-                print('  ', end="")
-            if node.word is not None: # Not a leaf, we continue exploring the tree
-                print(node.word.string, end="")
-            print(": C=", currentCost, "(", node.label,  ",", labelPredicted, ") ->", isLabelCorrect)
-            print(y)
-        if node.word is None: # Not a leaf, we continue exploring the tree
-            currentCostL, nbLabelCorrectL = self._evaluateAllError(node.l, Ws, verbose, level+1) # Left
-            currentCostR, nbLabelCorrectR = self._evaluateAllError(node.r, Ws, verbose, level+1) # Right
-            
-            currentCost    += currentCostL    + currentCostR
-            nbLabelCorrect += nbLabelCorrectL + nbLabelCorrectR
-        return currentCost, nbLabelCorrect
-    
-    def evaluateRootError(self, Ws):
-        """
-        Return the error of the complete sentence (at the root) (nb of not correctly classified label)
-        """
-        pass # TODO Eventually
-        
     def printTree(self):
         """
         Recursivelly print the tree
