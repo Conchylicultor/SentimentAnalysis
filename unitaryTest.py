@@ -89,7 +89,7 @@ def testGradient():
     
     # Create a sample
     sample = tree.Tree("(4 (2 (2 But) (2 (3 (3 (2 believe) (2 it)) (2 or)) (1 not))) (4 (2 ,) (4 (2 it) (4 (4 (2 's) (4 (2 one) (4 (2 of) (4 (4 (2 the) (4 (4 (2 most) (4 (4 beautiful) (3 (2 ,) (3 evocative)))) (2 works))) (2 (2 I) (2 (2 've) (2 seen))))))) (2 .)))))")
-    sample.printTree() # Check parsing and sample loading
+    #sample.printTree() # Check parsing and sample loading
     
     # Random values between [0-1]
     V  = np.random.rand(params.wordVectSpace, 2*params.wordVectSpace, 2*params.wordVectSpace) # Tensor of the RNTN layer
@@ -98,6 +98,7 @@ def testGradient():
 
     # Compute the gradient using the direct formula
     sample.computeRntn(V, W)
+    sample.evaluateAllError(Ws, verbose=True) # Check the error at each node
     compGradV, compGradW, compGradWs = sample.backpropagateRntn(V, W, Ws)
     
     # Compute the gradient using the numerical approximation
