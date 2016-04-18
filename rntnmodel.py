@@ -112,7 +112,7 @@ class Model:
         # dE/dz = (t - softmax(z)) Derivative of the cost with respect to the softmax classifier input
         t = node.labelVect()
         y = self._predictNode(node)
-        dE_dz = (t - y) # TODO: Check the sign !!
+        dE_dz = (y - t)
         
         #node.printInd("o=", node.output)
         #node.printInd("y=", y)
@@ -172,6 +172,7 @@ class Model:
         WARNING: Using the formula of the paper, the regularisation
         term is not divided by two so the derivate added here will be
         multiplied x2
+        WARNING: We do not regularize the bias term
         Args:
             regularisationTerm: The lambda term
         """
@@ -180,11 +181,11 @@ class Model:
         # Tensor layer
         gradient.dV  += factor*self.V # Tensor of the RNTN layer
         gradient.dW  += factor*self.W # Regular term of the RNTN layer
-        gradient.db  += factor*self.b # Bias for the regular term of the RNTN layer
+        #gradient.db  += factor*self.b # Bias for the regular term of the RNTN layer
         
         # Softmax
         gradient.dWs += factor*self.Ws # Softmax classifier
-        gradient.dbs += factor*self.bs # Bias of the softmax classifier
+        #gradient.dbs += factor*self.bs # Bias of the softmax classifier
         
         # Words
         # TODO: What about dL ??
@@ -214,24 +215,16 @@ class Model:
         self.adagradG.dWs += gradient.dWs * gradient.dWs
         self.adagradG.dbs += gradient.dbs * gradient.dbs
         
-        self.V  += self.learningRate * gradient.dV  / np.sqrt(self.adagradG.dV + self.adagradEpsilon)
-        self.W  += self.learningRate * gradient.dW  / np.sqrt(self.adagradG.dW + self.adagradEpsilon)
-        self.b  += self.learningRate * gradient.db  / np.sqrt(self.adagradG.db + self.adagradEpsilon)
-        self.Ws += self.learningRate * gradient.dWs / np.sqrt(self.adagradG.dWs + self.adagradEpsilon)
-        self.bs += self.learningRate * gradient.dbs / np.sqrt(self.adagradG.dbs + self.adagradEpsilon)
-        
-        ## Tensor layer
-        #self.V  += self.learningRate * gradient.dV
-        #self.W  += self.learningRate * gradient.dW
-        #self.b  += self.learningRate * gradient.db
-        
-        ## Softmax
-        #self.Ws += self.learningRate * gradient.dWs
-        #self.bs += self.learningRate * gradient.dbs
+        # Step in the opposite direction of the gradient
+        self.V  -= self.learningRate * gradient.dV  / np.sqrt(self.adagradG.dV + self.adagradEpsilon)
+        self.W  -= self.learningRate * gradient.dW  / np.sqrt(self.adagradG.dW + self.adagradEpsilon)
+        self.b  -= self.learningRate * gradient.db  / np.sqrt(self.adagradG.db + self.adagradEpsilon)
+        self.Ws -= self.learningRate * gradient.dWs / np.sqrt(self.adagradG.dWs + self.adagradEpsilon)
+        self.bs -= self.learningRate * gradient.dbs / np.sqrt(self.adagradG.dbs + self.adagradEpsilon)
         
         # Words (WARNING: Classical update for the word weights)
         for elem in gradient.dL: # Add every word gradient individually
-            self.L[elem[0],:] += self.learningRate * elem[1]
+            self.L[elem[0],:] -= self.learningRate * elem[1]
     
     def resetAdagrad(self):
         """
@@ -282,7 +275,7 @@ class Model:
         
         # Cost at the current node
         y = self._predictNode(node) # Softmax prediction
-        error.cost     = np.log(y[node.label]) # We only take the cell which correspond to the label, all other terms are null
+        error.cost     = -np.log(y[node.label]) # We only take the cell which correspond to the label, all other terms are null
         labelPredicted = np.argmax(y) # Predicted label
         sucess = int(labelPredicted == node.label)
         error.nbNodeCorrect = sucess
