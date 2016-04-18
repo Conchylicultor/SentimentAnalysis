@@ -77,6 +77,7 @@ def main():
             model.updateWeights(gradient)
             
             # Plot progress every 10% of dataset covered
+            print(nbSampleCovered, "/", len(trainingSet))
             if nbSampleCovered % (len(trainingSet)//10) == 0:
                 print(nbSampleCovered*100 // len(trainingSet) + 1, "% of dataset covered")
             nbSampleCovered += 1

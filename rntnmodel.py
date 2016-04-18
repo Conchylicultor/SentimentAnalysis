@@ -18,7 +18,11 @@ class Model:
         # Learning parametters
         
         self.regularisationTerm = 0.0001 # Lambda
-        self.learningRate = 0.01 # TODO: Replace by AdaGrad !!
+        
+        # AdaGrad parametters
+        self.learningRate = 0.001
+        self.adagradG = None;
+        self.adagradEpsilon = 1e-3;
         
         # Weights
         
@@ -194,18 +198,36 @@ class Model:
         """
         # TODO: Adagrad
         
-        # Tensor layer
-        self.V  += self.learningRate * gradient.dV
-        self.W  += self.learningRate * gradient.dW
-        self.b  += self.learningRate * gradient.db
+        # Get parametters
+        paramsWeights   = self.getFlatWeights()
+        gradientWeights = self.gradToFlatWeigths(gradient)
         
-        # Softmax
-        self.Ws += self.learningRate * gradient.dWs
-        self.bs += self.learningRate * gradient.dbs
+        if self.adagradG is None: # First time we update the gradient
+            self.adagradG = np.zeros(paramsWeights.shape) # Initialisation of G
+            
+        # We update our parametters according to AdaGrad algorithm
+        for i in range(len(paramsWeights)):
+            self.adagradG[i] = self.adagradG[i] + gradientWeights[i]*gradientWeights[i] # Update history by the sqrt of the gradient
+            paramsWeights += self.learningRate * gradientWeights[i] / (self.adagradG[i] + self.adagradEpsilon)# Add the ponderate gradient
+    
+        # Restore params
+        self.setFlatWeights(paramsWeights)
         
-        # Words
+        ## Tensor layer
+        #self.V  += self.learningRate * gradient.dV
+        #self.W  += self.learningRate * gradient.dW
+        #self.b  += self.learningRate * gradient.db
+        
+        ## Softmax
+        #self.Ws += self.learningRate * gradient.dWs
+        #self.bs += self.learningRate * gradient.dbs
+        
+        # Words (WARNING: Classical update for the word weights)
         for elem in gradient.dL: # Add every word gradient individually
             self.L[elem[0],:] += self.learningRate * elem[1]
+    
+    def resetAdagrad(self):
+        self.adagradG = None # Erase history
         
     def computeError(self, dataset, compute = False):
         """
@@ -341,6 +363,20 @@ class Model:
         gradient.dbs = np.reshape(flatWeigths[initIdx:endIdx], self.bs.shape)
         
         return gradient
+    
+    def gradToFlatWeigths(self, gradient):
+        """
+        Return all params concatenated in a big 1d array
+        """
+        weights = np.concatenate((\
+            gradient.dV.ravel(),\
+            gradient.dW.ravel(),\
+            gradient.db.ravel(),\
+            gradient.dWs.ravel(),\
+            gradient.dbs.ravel()\
+            ))
+        # TODO: Try on L
+        return weights
     
     # Other utils fcts
     
