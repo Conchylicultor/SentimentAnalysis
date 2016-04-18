@@ -12,19 +12,6 @@ import params
 import tree
 import vocabulary
 import rntnmodel
-
-def testMath():
-    # Test the array multiplication
-    x = np.array([1, 2, 3])
-    y = np.array([4, 5, 6])
-    xyT = np.outer(x, y)
-    print("x*y': ", xyT)
-    print("Type of x*y': ", type(xyT))
-    print("Type of x: ", type(x))
-    print("Type of y': ", type(y))
-    print("Shape of x*y': ", xyT.shape)
-    print("Shape of x': ", x.shape)
-    print("Shape of y': ", y.shape)
     
 
 # Gradient checking
@@ -112,22 +99,11 @@ def testCheckGradient():
     print("Distances: dWs=", distWs)
     print("Distances: dbs=", distbs)
 
-def testOther():
-    """
-    Some other tests
-    """
-    pass
     
 def main():
     # Dictionary initialisation
     vocabulary.initVocab()
-    
-    #testOther()
     testCheckGradient()
-    #testMath()
-    
-    pass
-
 
 if __name__ == "__main__":
     main()

@@ -237,6 +237,7 @@ class Model:
         """
         Just restore the AdaGrad history to its initial state
         """
+        print("Reset AdaGrad")
         self.adagradG = None # Erase history
         
     def computeError(self, dataset, compute = False):
@@ -457,20 +458,46 @@ class ModelError:
     
     def __str__(self):
         """
-        Show diverse informations
+        Show diverse informations (is called when trying to print the error)
+        In the current version, it is not possible to plot inside a tree for debugging (crash when
+        divide by 0), it is quite easy to correct though if really needed
         """
         return "Cost=%4f | CostReg=%4f | Percent=%2f%% (%d/%d) | Percent(Root)=%2f%% (%d/%d)" % (\
-            self.cost/(self.nbOfSample+1), # We add the +1 because if we try to plot inside a tree, it will divide by 0 \
+            self.cost/self.nbOfSample, \
             self.getRegCost(),\
-            self.nbNodeCorrect*100/self.nbOfNodes,\
+            self.getPercentNodes(),\
             self.nbNodeCorrect,\
             self.nbOfNodes,\
-            self.nbRootCorrect*100/(self.nbOfSample+1),\
+            self.getPercentRoot(),\
             self.nbRootCorrect,\
             self.nbOfSample)
-        
+    
+    def toCsv(self):
+        """
+        Return a string to be saved into a .csv file
+        Format: costReg|percentCorrectNodes|percentCorrectRoot
+        """
+        return "%4f|%4f|%4f" % (self.getRegCost(), self.getPercentNodes(), self.getPercentRoot())
+    
     def getRegCost(self):
-        return self.cost + self.regularisation
+        """
+        Just return the cost with the regularisation term (Normalised by the number of sample)
+        """
+        assert self.nbOfSample > 0 # Could made the program crash if we try to plot the error while computing it (when debugging the node error)
+        return self.cost/self.nbOfSample + self.regularisation # If we try to plot inside a tree, it will divide by 0 ; the regularisation is add one times by sample, then normalised (equivalent to just added)
+    
+    def getPercentNodes(self):
+        """
+        Percentage of correctly labelled nodes (all tree nodes taken)
+        """
+        return self.nbNodeCorrect*100/self.nbOfNodes
+    
+    def getPercentRoot(self):
+        """
+        Percentage of correctly labelled samples (only root taken)
+        """
+        assert self.nbOfSample > 0 # Could made the program crash if we try to plot the error while computing it (when debugging the node error)
+        return self.nbRootCorrect*100/self.nbOfSample
     
     def __iadd__(self, error):
         """

@@ -17,10 +17,11 @@ import rntnmodel
 # Parametters
 nbEpoch = 30
 miniBatchSize = 1 # TODO Try with 30
+adagradResetNbIter = 5 # Reset every X iterations
 
 
 def main():
-    print("Welcome into RNTN implementation 0.1")
+    print("Welcome into RNTN implementation 0.6")
     
     random.seed("MetaMind") # Lucky seed ? Fixed seed for replication
     
@@ -60,7 +61,8 @@ def main():
         # Randomly shuffle the dataset
         random.shuffle(trainingSet)
         
-        model.resetAdagrad() # Start with a clear history
+        if i % adagradResetNbIter == 0: # Reset every 4
+            model.resetAdagrad() # Start with a clear history
         
         # Loop over the training samples
         # TODO: Use mini-batch instead of online learning
@@ -90,13 +92,20 @@ def main():
         teError = model.computeError(testingSet, True)
         print("Test  error: ", teError)
         
-        # Saving the model (every X epoch)
+        # Saving the model (for each epoch)
         print("Saving model...")
-        model.saveModel("save/train") # Also save the dictionary
+        model.saveModel("save/train") # The function also save the dictionary
+        
+        resultFile = open("results/train.csv", "a") # Open the file (cursor at the end)
+        resultFile.write("%d|%s|%s\n" % (i, trError.toCsv(), teError.toCsv())) # Record the data for the learning curve
+        resultFile.close()
+        
         
     print("Training complete, validating...")
-    vaError = utils.computeError(validationSet, True)
+    vaError = model.computeError(validationSet, True)
     print("Validation error: ", vaError)
+    
+    print("The End. Thank you for using this program!")
     
 
 if __name__ == "__main__":
