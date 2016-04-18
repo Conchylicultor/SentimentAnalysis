@@ -229,7 +229,7 @@ class Model:
         for sample in dataset:
             if compute: # If not done yet, compute the Rntn
                 self.evaluateSample(sample)
-            error += self._evaluateCostNode(sample.root) # Normalize also by number of nodes ?? << Doesn't seems to be the case in the paper
+            error += self._evaluateCostNode(sample.root, True) # Normalize also by number of nodes ?? << Doesn't seems to be the case in the paper
             error.nbOfSample += 1
         
         # Normalize the cost by the number of sample
@@ -241,7 +241,7 @@ class Model:
         
         return error
     
-    def _evaluateCostNode(self, node):
+    def _evaluateCostNode(self, node, isRoot=False):
         """
         Recursivelly compute the error
         """
@@ -251,7 +251,10 @@ class Model:
         y = self._predictNode(node) # Softmax prediction
         error.cost     = np.log(y[node.label]) # We only take the cell which correspond to the label, all other terms are null
         labelPredicted = np.argmax(y) # Predicted label
-        error.nbOfCorrectLabel = int(labelPredicted == node.label)
+        sucess = int(labelPredicted == node.label)
+        error.nbNodeCorrect = sucess
+        if isRoot:
+            error.nbRootCorrect = sucess # Add the sucess at the top node
         error.nbOfNodes = 1
 
         ## Debug infos
@@ -275,9 +278,9 @@ class Model:
         Return all params concatenated in a big 1d array
         """
         weights = np.concatenate((\
-           self.V.ravel(),\
-           self.W.ravel(),\
-           self.b.ravel(),\
+            self.V.ravel(),\
+            self.W.ravel(),\
+            self.b.ravel(),\
             self.Ws.ravel(),\
             self.bs.ravel()\
             ))
@@ -402,19 +405,22 @@ class ModelError:
         
         self.cost = 0 # Regular cost (formula)
         self.regularisation = 0 # WARNING: Is added only one times for all the samples (avoid adding at each loop)
-        self.nbOfCorrectLabel = 0 # Nb of corrected predicted labels
+        self.nbNodeCorrect = 0 # Nb of corrected predicted labels
+        self.nbRootCorrect = 0 # Nb of corrected predicted labels (only the top level)
         # Could also add the binary prediction (just +/- and the predictions to the root)
     
     def __str__(self):
         """
         Show diverse informations
         """
-        return "Cost=%4f | CostReg=%4f | Percent=%2f%% (%d/%d) | NbOfSamples=%d" % (\
+        return "Cost=%4f | CostReg=%4f | Percent=%2f%% (%d/%d) | Percent(Root)=%2f%% (%d/%d)" % (\
             self.cost/(self.nbOfSample+1), # We add the +1 because if we try to plot inside a tree, it will divide by 0 \
             self.getRegCost(),\
-            self.nbOfCorrectLabel*100/self.nbOfNodes,\
-            self.nbOfCorrectLabel,\
+            self.nbNodeCorrect*100/self.nbOfNodes,\
+            self.nbNodeCorrect,\
             self.nbOfNodes,\
+            self.nbRootCorrect*100/(self.nbOfSample+1),\
+            self.nbRootCorrect,\
             self.nbOfSample)
         
     def getRegCost(self):
@@ -428,6 +434,7 @@ class ModelError:
         self.nbOfSample         += error.nbOfSample
         self.cost               += error.cost
         self.regularisation     += error.regularisation
-        self.nbOfCorrectLabel   += error.nbOfCorrectLabel
+        self.nbNodeCorrect      += error.nbNodeCorrect
+        self.nbRootCorrect      += error.nbRootCorrect
         
         return self
