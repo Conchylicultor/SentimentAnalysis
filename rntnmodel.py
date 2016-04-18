@@ -20,7 +20,7 @@ class Model:
         self.regularisationTerm = 0.0001 # Lambda
         
         # AdaGrad parametters
-        self.learningRate = 0.001
+        self.learningRate = 0.01
         self.adagradG = None;
         self.adagradEpsilon = 1e-3;
         
@@ -196,22 +196,29 @@ class Model:
         """
         Update the weights according to the gradient
         """
-        # TODO: Adagrad
+        # Adagrad
         
-        # Get parametters
-        paramsWeights   = self.getFlatWeights()
-        gradientWeights = self.gradToFlatWeigths(gradient)
-        
+        # Eventually initialize
         if self.adagradG is None: # First time we update the gradient
-            self.adagradG = np.zeros(paramsWeights.shape) # Initialisation of G
+            self.adagradG = ModelGrad() # The gradient history is stored in a gradient object
+            self.adagradG.dV = np.zeros(self.V.shape)
+            self.adagradG.dW = np.zeros(self.W.shape)
+            self.adagradG.db = np.zeros(self.b.shape)
+            self.adagradG.dWs = np.zeros(self.Ws.shape)
+            self.adagradG.dbs = np.zeros(self.bs.shape)
             
         # We update our parametters according to AdaGrad algorithm
-        for i in range(len(paramsWeights)):
-            self.adagradG[i] = self.adagradG[i] + gradientWeights[i]*gradientWeights[i] # Update history by the sqrt of the gradient
-            paramsWeights += self.learningRate * gradientWeights[i] / (self.adagradG[i] + self.adagradEpsilon)# Add the ponderate gradient
-    
-        # Restore params
-        self.setFlatWeights(paramsWeights)
+        self.adagradG.dV  += gradient.dV  * gradient.dV
+        self.adagradG.dW  += gradient.dW  * gradient.dW
+        self.adagradG.db  += gradient.db  * gradient.db
+        self.adagradG.dWs += gradient.dWs * gradient.dWs
+        self.adagradG.dbs += gradient.dbs * gradient.dbs
+        
+        self.V  += self.learningRate * gradient.dV  / np.sqrt(self.adagradG.dV + self.adagradEpsilon)
+        self.W  += self.learningRate * gradient.dW  / np.sqrt(self.adagradG.dW + self.adagradEpsilon)
+        self.b  += self.learningRate * gradient.db  / np.sqrt(self.adagradG.db + self.adagradEpsilon)
+        self.Ws += self.learningRate * gradient.dWs / np.sqrt(self.adagradG.dWs + self.adagradEpsilon)
+        self.bs += self.learningRate * gradient.dbs / np.sqrt(self.adagradG.dbs + self.adagradEpsilon)
         
         ## Tensor layer
         #self.V  += self.learningRate * gradient.dV
@@ -227,6 +234,9 @@ class Model:
             self.L[elem[0],:] += self.learningRate * elem[1]
     
     def resetAdagrad(self):
+        """
+        Just restore the AdaGrad history to its initial state
+        """
         self.adagradG = None # Erase history
         
     def computeError(self, dataset, compute = False):

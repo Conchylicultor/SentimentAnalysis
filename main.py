@@ -16,7 +16,7 @@ import rntnmodel
 
 # Parametters
 nbEpoch = 30
-miniBatchSize = 1 # TODO = 30
+miniBatchSize = 1 # TODO Try with 30
 
 
 def main():
@@ -60,6 +60,8 @@ def main():
         # Randomly shuffle the dataset
         random.shuffle(trainingSet)
         
+        model.resetAdagrad() # Start with a clear history
+        
         # Loop over the training samples
         # TODO: Use mini-batch instead of online learning
         nbSampleCovered = 1 # To plot the progression of the epoch
@@ -77,9 +79,8 @@ def main():
             model.updateWeights(gradient)
             
             # Plot progress every 10% of dataset covered
-            print(nbSampleCovered, "/", len(trainingSet))
             if nbSampleCovered % (len(trainingSet)//10) == 0:
-                print(nbSampleCovered*100 // len(trainingSet) + 1, "% of dataset covered")
+                print("%d%% of dataset covered (%d/%d)" % ((nbSampleCovered*100 // len(trainingSet) + 1), nbSampleCovered, len(trainingSet)))
             nbSampleCovered += 1
         
         # Compute new testing error

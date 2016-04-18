@@ -88,16 +88,16 @@ def testCheckGradient():
     numericalGradient = computeNumericalGradient(sample, model)
     
     # Show results (detailled values)
-    print("Computed  V[3]=\n", numericalGradient.dV[3])
-    print("Numerical V[3]=\n", analyticGradient.dV[3])
-    print("Computed  W=\n", numericalGradient.dW)
-    print("Numerical W=\n", analyticGradient.dW)
-    print("Computed  b=\n", numericalGradient.db)
-    print("Numerical b=\n", analyticGradient.db)
-    print("Computed  Ws=\n", numericalGradient.dWs)
-    print("Numerical Ws=\n", analyticGradient.dWs)
-    print("Computed  bs=\n", numericalGradient.dbs)
-    print("Numerical bs=\n", analyticGradient.dbs)
+    print("Computed  dV[3]=\n", numericalGradient.dV[3])
+    print("Numerical dV[3]=\n", analyticGradient.dV[3]) # We plot a random layer instead of the whole tensor
+    print("Computed  dW=\n", numericalGradient.dW)
+    print("Numerical dW=\n", analyticGradient.dW)
+    print("Computed  db=\n", numericalGradient.db)
+    print("Numerical db=\n", analyticGradient.db)
+    print("Computed  dWs=\n", numericalGradient.dWs)
+    print("Numerical dWs=\n", analyticGradient.dWs)
+    print("Computed  dbs=\n", numericalGradient.dbs)
+    print("Numerical dbs=\n", analyticGradient.dbs)
     
     # Show results (distance)
     distV  = np.linalg.norm(analyticGradient.dV  - numericalGradient.dV)  / np.linalg.norm(analyticGradient.dV  + numericalGradient.dV)
@@ -106,11 +106,11 @@ def testCheckGradient():
     distWs = np.linalg.norm(analyticGradient.dWs - numericalGradient.dWs) / np.linalg.norm(analyticGradient.dWs + numericalGradient.dWs)
     distbs = np.linalg.norm(analyticGradient.dbs - numericalGradient.dbs) / np.linalg.norm(analyticGradient.dbs + numericalGradient.dbs)
 
-    print("Distances: V=", distV)
-    print("Distances: W=", distW)
-    print("Distances: b=", distb)
-    print("Distances: Ws=", distWs)
-    print("Distances: bs=", distbs)
+    print("Distances: dV=", distV)
+    print("Distances: dW=", distW)
+    print("Distances: db=", distb)
+    print("Distances: dWs=", distWs)
+    print("Distances: dbs=", distbs)
 
 def testOther():
     """
