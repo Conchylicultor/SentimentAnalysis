@@ -16,7 +16,7 @@ import rntnmodel
 # Parametters
 nbEpoch = 30
 miniBatchSize = 1 # TODO Try with 30
-adagradResetNbIter = 5 # Reset every X iterations
+adagradResetNbIter = 10 # Reset every X iterations (0 for never)
 
 # Path and name where the infos will be saved
 outputModel = "save/model"
@@ -46,7 +46,7 @@ def main():
     # Datatransform (normalisation, remove outliers,...) ?? > Not here
     
     # Creating the model
-    model = rntnmodel.Model()
+    model = rntnmodel.Model(regularisationTerm = 0)
     
     # Plot the initial error (wait less time before seing if our model is learning)
     #print("Initial errors...")
@@ -70,7 +70,7 @@ def main():
         # Randomly shuffle the dataset
         random.shuffle(trainingSet)
         
-        if i % adagradResetNbIter == 0: # Reset every 4
+        if adagradResetNbIter != 0 and i % adagradResetNbIter == 0: # Reset every X epochs
             model.resetAdagrad() # Start with a clear history
         
         # Loop over the training samples

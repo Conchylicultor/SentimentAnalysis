@@ -20,8 +20,9 @@ class Vocab:
         self.dictionary = {} # List of Words (dictionary)
         self.currentIdx = 0
         if filename is not None:
-            f = open(filename + ".pkl", 'rb')
+            f = open(filename + "_dict.pkl", 'rb')
             self.dictionary = pickle.load(f) # If the file is empty the ValueError will be thrown
+            f.close()
             print(len(self.dictionary), " words loaded!")
             
     
@@ -54,12 +55,13 @@ class Vocab:
         """
         Save the dictionary using pickle
         """
-        f = open(filename + ".pkl", 'wb')
+        f = open(filename + "_dict.pkl", 'wb')
         pickle.dump(self.dictionary, f)
+        f.close()
                 
         
 # Global variable which store all the words
 vocab = None
-def initVocab(): # Is initialized in main.py
+def initVocab(saveName = None): # Is initialized in main.py
     global vocab
-    vocab = Vocab()
+    vocab = Vocab(saveName)

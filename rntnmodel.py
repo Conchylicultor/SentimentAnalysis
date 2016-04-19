@@ -7,46 +7,74 @@ Class which define the model and store the parametters
 import numpy as np
 import utils
 import vocabulary
+import pickle
 
 class Model:
 
-    def __init__(self, randInitMaxValueNN=0.0001):
+    def __init__(self, filename=None,\
+        randInitMaxValueNN=0.0001,\
+        regularisationTerm = 0.0001\
+            ):
         """
         WARNING: Has to be called after loading the vocabulary
         """
-        
         # Model parametters
+        
         self.wordVectSpace = 25 # World vector size
         self.nbClass = 5 # 0-4 sentiments
-
-        self.randInitMaxValueWords = 0.1 # For initialize the vector words
-        self.randInitMaxValueNN = randInitMaxValueNN # For initialize the NN weights
-
-        # Learning parametters
         
-        self.regularisationTerm = 0.0001 # Lambda
+        self.regularisationTerm = regularisationTerm # Lambda
         
-        # AdaGrad parametters
+        # Learning parametters (AdaGrad)
+        
         self.learningRate = 0.01
-        self.adagradG = None;
+        self.adagradG = None; # Contain the gradient history
         self.adagradEpsilon = 1e-3;
         
-        # Weights
-        
-        # TODO: Possibility of loading from file (default initialize randomly)
-        # Initialisation with small values (best solution ??)
-        
-        # Tensor layer
-        self.V  = np.random.rand(self.wordVectSpace, 2*self.wordVectSpace, 2*self.wordVectSpace) * self.randInitMaxValueNN # Tensor of the RNTN layer
-        self.W  = np.random.rand(self.wordVectSpace, 2*self.wordVectSpace)                       * self.randInitMaxValueNN # Regular term of the RNTN layer
-        self.b  = np.random.rand(self.wordVectSpace)                                             * self.randInitMaxValueNN # Bias for the regular term of the RNTN layer (WARNING: Confusions with b as input)
-        
-        # Softmax
-        self.Ws = np.random.rand(self.nbClass, self.wordVectSpace)                                 * self.randInitMaxValueNN # Softmax classifier
-        self.bs = np.random.rand(self.nbClass)                                                     * self.randInitMaxValueNN # Bias of the softmax classifier
-        
-        # Words << Contained in the vocab variable 
-        self.L  = np.random.normal(0.0, self.randInitMaxValueWords, (vocabulary.vocab.length(), self.wordVectSpace))# Vocabulary (List of N words on vector representation) (Indexing over the first variable: more perfs!)
+        if filename is None:
+            # Initialisation parametters
+            
+            self.randInitMaxValueWords = 0.1 # For initialize the vector words
+            self.randInitMaxValueNN = randInitMaxValueNN # For initialize the NN weights
+            
+            # Weights
+            
+            # Initialisation with small values (best solution ??)
+            
+            # Tensor layer
+            self.V  = np.random.rand(self.wordVectSpace, 2*self.wordVectSpace, 2*self.wordVectSpace) * self.randInitMaxValueNN # Tensor of the RNTN layer
+            self.W  = np.random.rand(self.wordVectSpace, 2*self.wordVectSpace)                       * self.randInitMaxValueNN # Regular term of the RNTN layer
+            self.b  = np.random.rand(self.wordVectSpace)                                             * self.randInitMaxValueNN # Bias for the regular term of the RNTN layer (WARNING: Confusions with b as input)
+            
+            # Softmax
+            self.Ws = np.random.rand(self.nbClass, self.wordVectSpace)                               * self.randInitMaxValueNN # Softmax classifier
+            self.bs = np.random.rand(self.nbClass)                                                   * self.randInitMaxValueNN # Bias of the softmax classifier
+            
+            # Words << Contained in the vocab variable
+            self.L  = np.random.normal(0.0, self.randInitMaxValueWords, (vocabulary.vocab.length(), self.wordVectSpace))# Vocabulary (List of N words on vector representation) (Indexing over the first variable: more perfs!)
+            
+        else: # Loading from file
+            print("Loading model from file: ", filename)
+            # The dictionary is loaded during initialisation
+            
+            # Loading hyperparametters
+            f = open(filename + "_params.pkl", 'rb')
+            paramsSave = pickle.load(f)
+            f.close()
+            
+            self.wordVectSpace      = paramsSave["wordVectSpace"] # Useless, could deduce those from the weigths dimentsion
+            self.nbClass            = paramsSave["nbClass"] # Useless, same stuff
+            self.regularisationTerm = paramsSave["regularisationTerm"]
+            
+            # Loading weigths
+            modelFile = np.load(filename + "_model.npz")
+            self.V  = modelFile['V']
+            self.W  = modelFile['W']
+            self.b  = modelFile['b']
+            self.Ws = modelFile['Ws']
+            self.bs = modelFile['bs']
+            self.L  = modelFile['L']
+            
         
     def _predictNode(self, node):
         """
@@ -177,11 +205,12 @@ class Model:
         Add the regularisation term to the givengradient and
         return it (The given gradient is also modified)
         WARNING: Using the formula of the paper, the regularisation
-        term is not divided by two so the derivate added here will be
+        term is not divided by 2 so the derivate added here will be
         multiplied x2
         WARNING: We do not regularize the bias term
         Args:
-            regularisationTerm: The lambda term
+            gradient: The gradient to regularize
+            miniBatchSize: The number of sample taken for this gradient
         """
         factor = 2 * self.regularisationTerm * miniBatchSize # Factor 2 for the derivate of the square
         
@@ -231,6 +260,7 @@ class Model:
         
         # Words (WARNING: Classical update for the word weights)
         for elem in gradient.dL: # Add every word gradient individually
+            # TODO: Adagrad dL
             self.L[elem[0],:] -= self.learningRate * elem[1]
     
     def resetAdagrad(self):
@@ -394,8 +424,27 @@ class Model:
         the extension)
         This save both model parametters and dictionary
         """
-        vocabulary.vocab.save(destination + "_dict")
-        np.savez(destination + "_model", V=self.V, W=self.W, b=self.b, Ws=self.Ws, bs=self.bs, L=self.L)
+        # Vocabulary
+        vocabulary.vocab.save(destination) # The fct will add the extention
+        
+        # Hyperparametters
+        paramsSave = {\
+            'wordVectSpace':      self.wordVectSpace,\
+            'nbClass':            self.nbClass,\
+            'regularisationTerm': self.regularisationTerm,\
+            }
+        f = open(destination + "_params.pkl", 'wb')
+        pickle.dump(paramsSave, f)
+        f.close()
+        
+        # Weights
+        np.savez(destination + "_model",\
+            V=self.V,\
+            W=self.W,\
+            b=self.b,\
+            Ws=self.Ws,\
+            bs=self.bs,\
+            L=self.L)
 
 class ModelGrad:
     """

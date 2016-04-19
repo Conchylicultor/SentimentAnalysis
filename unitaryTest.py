@@ -25,7 +25,7 @@ def computeNumericalGradient(sample, model):
     initialParams = model.getFlatWeights()
     
     numGrad = np.zeros(initialParams.shape)
-    epsilon = 1e-8
+    epsilon = 1e-6
     
     print(len(numGrad), " params to check (take your time, it will be long...)")
     
@@ -62,10 +62,11 @@ def testCheckGradient():
     #sample.printTree() # Check parsing and sample loading
     
     # Initialize the model
-    model = rntnmodel.Model(randInitMaxValueNN = 2.0) # Try bigger values for the initial values
-    model.regularisationTerm = 0 # Check without regularisation
-    #model.regularisationTerm = 10 # Check the regularisation
-    #model.regularisationTerm = 0.01 # Check the regularisation
+    model = rntnmodel.Model(\
+        randInitMaxValueNN = 2.0,  # Try bigger values for the initial values \
+        #regularisationTerm = 0 # Check without regularisation \
+        regularisationTerm = 0.01 # Check gradient with regularisation \
+        )
     
     # Compute the gradient using the direct formula
     model.evaluateSample(sample)

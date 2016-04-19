@@ -7,29 +7,27 @@ Test the validation set
 import os, sys
 import numpy as np
 import utils
+import rntnmodel
 import vocabulary
 
+inputModel = "save/train"
 
 def main():
     print("Welcome into RNTN implementation 0.1")
     
     print("Loading dictionary...")
     # Dictionary initialisation
-    vocabulary.initVocab("save/dict")
+    vocabulary.initVocab(inputModel)
     
     # Loading dataset
     validationSet = utils.loadDataset("trees/dev.txt");
     print("Validation loaded !")
     
     # Creating the model
-    modelFile = np.load("save/model")
-    V  = modelFile['V']  # Tensor of the RNTN layer
-    W  = modelFile['W']  # Regular term of the RNTN layer
-    Ws = modelFile['Ws'] # Softmax classifier
-    #L = # Vocabulary (List of N words on vector representation) << Contained in the vocab variable
+    model = rntnmodel.Model(inputModel)
             
     print("Computation validation...")
-    vaError = utils.computeError(validationSet,  V, W, Ws, regularisationTerm, True)
+    vaError = model.computeError(validationSet, True)
     print("Validation error: ", vaError)
     
 
