@@ -27,7 +27,7 @@ class Model:
         
         # Learning parametters (AdaGrad)
         
-        self.learningRate = 0.01
+        self.learningRate = 0.1
         self.adagradG = None; # Contain the gradient history
         self.adagradEpsilon = 1e-3;
         
@@ -79,7 +79,8 @@ class Model:
     def _predictNode(self, node):
         """
         Return the softmax sentiment prediction for the given word vector
-        WARNING: The node output(after activation fct) has to be already computed
+        WARNING: The node output(after activation fct) has to be already
+        computed (by the evaluateSample fct)
         """
         z = np.dot(self.Ws, node.output) + self.bs
         return utils.softmax(z)
@@ -237,12 +238,8 @@ class Model:
         
         # Eventually initialize
         if self.adagradG is None: # First time we update the gradient
-            self.adagradG = ModelGrad() # The gradient history is stored in a gradient object
-            self.adagradG.dV = np.zeros(self.V.shape)
-            self.adagradG.dW = np.zeros(self.W.shape)
-            self.adagradG.db = np.zeros(self.b.shape)
-            self.adagradG.dWs = np.zeros(self.Ws.shape)
-            self.adagradG.dbs = np.zeros(self.bs.shape)
+            self.adagradG = self.buildEmptyGradient() # The gradient history is stored in a gradient object
+            self.adagradG.dL  = np.zeros(self.L.shape) # In the case of the L history, the variable L contain the history of the whole dictionary instead of a list of modification
             
         # We update our parametters according to AdaGrad algorithm
         self.adagradG.dV  += gradient.dV  * gradient.dV
@@ -260,9 +257,25 @@ class Model:
         
         # Words (WARNING: Classical update for the word weights)
         for elem in gradient.dL: # Add every word gradient individually
-            # TODO: Adagrad dL
-            self.L[elem[0],:] -= self.learningRate * elem[1]
+            self.adagradG.dL[elem[0],:]  += elem[1] * elem[1] # We add the current gradient to the adagrad history
+            self.L[elem[0],:] -= self.learningRate * elem[1] / np.sqrt(self.adagradG.dL[elem[0],:] + self.adagradEpsilon) # Update with adagrad
     
+    def buildEmptyGradient(self):
+        """
+        Just construct and return an empty gradient
+        This function could be replaced by implementing a smarter ModelGrad.__iadd__ which should concider the None case
+        """
+        gradient = ModelGrad() # The gradient history is stored in a gradient object
+        gradient.dV  = np.zeros(self.V.shape)
+        gradient.dW  = np.zeros(self.W.shape)
+        gradient.db  = np.zeros(self.b.shape)
+        gradient.dWs = np.zeros(self.Ws.shape)
+        gradient.dbs = np.zeros(self.bs.shape)
+        gradient.dL  = None
+        
+        return gradient
+        
+        
     def resetAdagrad(self):
         """
         Just restore the AdaGrad history to its initial state

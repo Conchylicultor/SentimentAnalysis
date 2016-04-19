@@ -15,8 +15,8 @@ import rntnmodel
 
 # Parametters
 nbEpoch = 30
-miniBatchSize = 1 # TODO Try with 30
-adagradResetNbIter = 10 # Reset every X iterations (0 for never)
+miniBatchSize = 25
+adagradResetNbIter = 0 # Reset every X iterations (0 for never)
 
 # Path and name where the infos will be saved
 outputModel = "save/model"
@@ -55,11 +55,18 @@ def main():
     #teError = model.computeError(testingSet, True)
     #print("Test  error: ", teError)
     
-    print("Start training...")
     # TODO: Include the training in the cross-validation loop (tune parametters)
+    print("Start training...")
+    print("Parametters:")
+    paramsStr  = "- Minibatch size: %d\n" % miniBatchSize
+    paramsStr += "- Learning rate: %f\n" % model.learningRate
+    paramsStr += "- Regularisation: %f\n" % model.regularisationTerm
+    paramsStr += "- Adagrad reset after: %d\n" % adagradResetNbIter
+    print(paramsStr)
     
     # Indicate a new training on the result file
     resultFile = open(outputResult, "a") # Open the file (cursor at the end)
+    resultFile.write(paramsStr)
     resultFile.write("Epoch|Train|Test\n") # Record the data for the learning curve
     resultFile.close()
     
@@ -76,18 +83,28 @@ def main():
         # Loop over the training samples
         # TODO: Use mini-batch instead of online learning
         nbSampleCovered = 1 # To plot the progression of the epoch
+        gradient = None
+        currentBatch = 0
         for trainingSample in trainingSet: # Select next the training sample
             # Forward pass
             model.evaluateSample(trainingSample) # Compute the output recursivelly
             
             # Backward pass (Compute the gradients for the current sample)
-            gradient = model.backpropagate(trainingSample)
+            if gradient is None:
+                gradient = model.buildEmptyGradient() # Initialize the gradient
             
-            # Add regularisation (the factor 2 will be multiplied < is useful for gradient checking)
-            gradient = model.addRegularisation(gradient, miniBatchSize)
+            gradient += model.backpropagate(trainingSample)
             
-            # Update the weights
-            model.updateWeights(gradient)
+            # Minibatch: add the gradient only after X samples
+            currentBatch += 1
+            if currentBatch >= miniBatchSize:
+                # Add regularisation (the factor 2 will be multiplied < is useful for gradient checking)
+                gradient = model.addRegularisation(gradient, miniBatchSize)
+                # Update the weights
+                model.updateWeights(gradient)
+                # Reset current batch and gradient
+                currentBatch = 0
+                gradient = None
             
             # Plot progress every 10% of dataset covered
             if nbSampleCovered % (len(trainingSet)//10) == 0:
@@ -106,7 +123,7 @@ def main():
         model.saveModel(outputModel) # The function also save the dictionary
         
         resultFile = open(outputResult, "a") # Open the file (cursor at the end)
-        resultFile.write("%d|%s|%s\n" % (i, trError.toCsv(), teError.toCsv())) # Record the data for the learning curve
+        resultFile.write("%d|%s|%s\n" % (i, trError.toCsv(), teError.toCsv())) # Record the data for the learning curves
         resultFile.close()
         
         
