@@ -6,7 +6,6 @@ Class which manage all the vector word representations
 
 import numpy as np
 import pickle
-import params
 
 class Word:
     """

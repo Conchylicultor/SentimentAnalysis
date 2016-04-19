@@ -9,7 +9,6 @@ Use python 3
 import os, sys
 import random
 import numpy as np
-import params
 import utils
 import vocabulary
 import rntnmodel
@@ -19,11 +18,15 @@ nbEpoch = 30
 miniBatchSize = 1 # TODO Try with 30
 adagradResetNbIter = 5 # Reset every X iterations
 
+# Path and name where the infos will be saved
+outputModel = "save/model"
+outputResult = "results/train.csv"
 
 def main():
     print("Welcome into RNTN implementation 0.6")
     
     random.seed("MetaMind") # Lucky seed ? Fixed seed for replication
+    np.random.seed(7)
     
     print("Parsing dataset, creating dictionary...")
     # Dictionary initialisation
@@ -54,6 +57,12 @@ def main():
     
     print("Start training...")
     # TODO: Include the training in the cross-validation loop (tune parametters)
+    
+    # Indicate a new training on the result file
+    resultFile = open(outputResult, "a") # Open the file (cursor at the end)
+    resultFile.write("Epoch|Train|Test\n") # Record the data for the learning curve
+    resultFile.close()
+    
     # Main loop
     for i in range(nbEpoch):
         print("Epoch: ", i)
@@ -94,9 +103,9 @@ def main():
         
         # Saving the model (for each epoch)
         print("Saving model...")
-        model.saveModel("save/train") # The function also save the dictionary
+        model.saveModel(outputModel) # The function also save the dictionary
         
-        resultFile = open("results/train.csv", "a") # Open the file (cursor at the end)
+        resultFile = open(outputResult, "a") # Open the file (cursor at the end)
         resultFile.write("%d|%s|%s\n" % (i, trError.toCsv(), teError.toCsv())) # Record the data for the learning curve
         resultFile.close()
         

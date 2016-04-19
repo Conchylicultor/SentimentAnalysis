@@ -8,7 +8,6 @@ as some parts of the script
 import numpy as np
 import time # Checking performances
 import utils
-import params
 import tree
 import vocabulary
 import rntnmodel
@@ -63,10 +62,10 @@ def testCheckGradient():
     #sample.printTree() # Check parsing and sample loading
     
     # Initialize the model
-    params.randInitMaxValueNN = 1.0 # Try bigger values for the initial values
-    model = rntnmodel.Model()
-    #model.regularisationTerm = 0 # Check without regularisation
-    model.regularisationTerm = 10 # Check the regularisation
+    model = rntnmodel.Model(randInitMaxValueNN = 2.0) # Try bigger values for the initial values
+    model.regularisationTerm = 0 # Check without regularisation
+    #model.regularisationTerm = 10 # Check the regularisation
+    #model.regularisationTerm = 0.01 # Check the regularisation
     
     # Compute the gradient using the direct formula
     model.evaluateSample(sample)

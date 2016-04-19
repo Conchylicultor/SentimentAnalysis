@@ -5,16 +5,23 @@ Class which define the model and store the parametters
 """
 
 import numpy as np
-import params
 import utils
 import vocabulary
 
 class Model:
 
-    def __init__(self):
+    def __init__(self, randInitMaxValueNN=0.0001):
         """
         WARNING: Has to be called after loading the vocabulary
         """
+        
+        # Model parametters
+        self.wordVectSpace = 25 # World vector size
+        self.nbClass = 5 # 0-4 sentiments
+
+        self.randInitMaxValueWords = 0.1 # For initialize the vector words
+        self.randInitMaxValueNN = randInitMaxValueNN # For initialize the NN weights
+
         # Learning parametters
         
         self.regularisationTerm = 0.0001 # Lambda
@@ -30,16 +37,16 @@ class Model:
         # Initialisation with small values (best solution ??)
         
         # Tensor layer
-        self.V  = np.random.rand(params.wordVectSpace, 2*params.wordVectSpace, 2*params.wordVectSpace) * params.randInitMaxValueNN # Tensor of the RNTN layer
-        self.W  = np.random.rand(params.wordVectSpace, 2*params.wordVectSpace)                         * params.randInitMaxValueNN # Regular term of the RNTN layer
-        self.b  = np.random.rand(params.wordVectSpace)                                                 * params.randInitMaxValueNN # Bias for the regular term of the RNTN layer (WARNING: Confusions with b as input)
+        self.V  = np.random.rand(self.wordVectSpace, 2*self.wordVectSpace, 2*self.wordVectSpace) * self.randInitMaxValueNN # Tensor of the RNTN layer
+        self.W  = np.random.rand(self.wordVectSpace, 2*self.wordVectSpace)                       * self.randInitMaxValueNN # Regular term of the RNTN layer
+        self.b  = np.random.rand(self.wordVectSpace)                                             * self.randInitMaxValueNN # Bias for the regular term of the RNTN layer (WARNING: Confusions with b as input)
         
         # Softmax
-        self.Ws = np.random.rand(params.nbClass, params.wordVectSpace)                                 * params.randInitMaxValueNN # Softmax classifier
-        self.bs = np.random.rand(params.nbClass)                                                       * params.randInitMaxValueNN # Bias of the softmax classifier
+        self.Ws = np.random.rand(self.nbClass, self.wordVectSpace)                                 * self.randInitMaxValueNN # Softmax classifier
+        self.bs = np.random.rand(self.nbClass)                                                     * self.randInitMaxValueNN # Bias of the softmax classifier
         
         # Words << Contained in the vocab variable 
-        self.L  = np.random.normal(0.0, params.randInitMaxValueWords, (vocabulary.vocab.length(), params.wordVectSpace))# Vocabulary (List of N words on vector representation) (Indexing over the first variable: more perfs!)
+        self.L  = np.random.normal(0.0, self.randInitMaxValueWords, (vocabulary.vocab.length(), self.wordVectSpace))# Vocabulary (List of N words on vector representation) (Indexing over the first variable: more perfs!)
         
     def _predictNode(self, node):
         """
@@ -73,8 +80,8 @@ class Model:
             inputVect = np.concatenate((b, c))
             
             # Compute the tensor term
-            tensorResult = np.zeros(params.wordVectSpace)
-            for i in range(params.wordVectSpace):
+            tensorResult = np.zeros(self.wordVectSpace)
+            for i in range(self.wordVectSpace):
                 tensorResult[i] = inputVect.T.dot(self.V[i]).dot(inputVect) # x' * V * x (Compute the tensor layer)
             
             # Compute the regular term
@@ -96,7 +103,7 @@ class Model:
         #   z: Output before softmax (z=Ws*a + bs)
         #   y: Output after softmax, final prediction (y=softmax(z))
         #   E: Cost of the current prediction (E = cost(softmax(Ws*a + bs)) = cost(y))
-        #   t: Gound truth prediction (labelVect)
+        #   t: Gound truth prediction
         # We then have:
         #   t -> a -> t -> a -> ... t -> a(last layer) -> z (projection on dim 5) -> y (softmax prediction) -> E (cost)
         
@@ -110,9 +117,9 @@ class Model:
         
         # Compute error coming from the softmax classifier on the current node
         # dE/dz = (t - softmax(z)) Derivative of the cost with respect to the softmax classifier input
-        t = node.labelVect()
         y = self._predictNode(node)
-        dE_dz = (y - t)
+        y[node.label] -= 1 # = y - t
+        dE_dz = y # = (y - t)
         
         #node.printInd("o=", node.output)
         #node.printInd("y=", y)
@@ -144,19 +151,19 @@ class Model:
             bc = np.concatenate((node.l.output, node.r.output)) # TODO: Right order ?
             
             # Compute the gradient of the tensor
-            gradient.dV = np.zeros((params.wordVectSpace, 2*params.wordVectSpace, 2*params.wordVectSpace))
-            for k in range(params.wordVectSpace):
+            gradient.dV = np.zeros((self.wordVectSpace, 2*self.wordVectSpace, 2*self.wordVectSpace))
+            for k in range(self.wordVectSpace):
                 gradient.dV[k] = sigmaCom[k] * np.outer(bc, bc) # 2d*2d matrix (*d after the loop)
             gradient.dW = np.outer(sigmaCom, bc) # d*2d matrix
             gradient.db = sigmaCom # d matrix
             
             # Compute the error at the bottom of the layer
             sigmaDown = np.dot(self.W.T, sigmaCom) # (regular term)
-            for k in range(params.wordVectSpace): # Compute S (tensor term)
+            for k in range(self.wordVectSpace): # Compute S (tensor term)
                 sigmaDown += sigmaCom[k] * (self.V[k] + self.V[k].T).dot(bc)
             
             # Propagate the error down to the next nodes
-            d = params.wordVectSpace
+            d = self.wordVectSpace
             gradient += self._backpropagate(node.l, sigmaDown[0:d])
             gradient += self._backpropagate(node.r, sigmaDown[d:2*d]) # Sum all gradients
         else: # Leaf: Update L
@@ -258,12 +265,9 @@ class Model:
             error += self._evaluateCostNode(sample.root, True) # Normalize also by number of nodes ?? << Doesn't seems to be the case in the paper
             error.nbOfSample += 1
         
-        # Normalize the cost by the number of sample
-        error.cost /= error.nbOfSample
-        
         # Add regularisation (No regularisation for the bias term)
         costReg = self.regularisationTerm * (np.sum(self.V*self.V) + np.sum(self.W*self.W) + np.sum(self.Ws*self.Ws)) # Numpy array so element-wise multiplication (What about L)
-        error.regularisation += costReg # Add regularisation (add N times (for each samples), then normalized)
+        error.regularisation += costReg * error.nbOfSample # Add regularisation (add N times (for each samples))
         
         return error
     
@@ -477,7 +481,7 @@ class ModelError:
         Just return the cost with the regularisation term (Normalised by the number of sample)
         """
         assert self.nbOfSample > 0 # Could made the program crash if we try to plot the error while computing it (when debugging the node error)
-        return self.cost/self.nbOfSample + self.regularisation # If we try to plot inside a tree, it will divide by 0 ; the regularisation is add one times by sample, then normalised (equivalent to just added)
+        return (self.cost + self.regularisation)/self.nbOfSample # If we try to plot inside a tree, it will divide by 0
     
     def getPercentNodes(self):
         """

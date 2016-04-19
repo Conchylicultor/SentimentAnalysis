@@ -5,7 +5,6 @@ Class which contain a sentence on the form of a tree
 """
 import re # Regex to parse the file
 import numpy as np
-import params
 import vocabulary
 import utils
 
@@ -25,14 +24,6 @@ class Node:
         
         # For backpropagation:
         self.output  = None # Output of the tensor network AFTER the activation function (same as .word.vect if leaf) (of dimention wordVectSpace)
-        
-    def labelVect(self):
-        """
-        Return the ground truth of the label (Variable t on the paper).
-        """
-        t = np.zeros(params.nbClass) # Zeros everywhere
-        t[self.label] = 1 # Except a one on the true label
-        return t
     
     def printInd(self, *args):
         """
