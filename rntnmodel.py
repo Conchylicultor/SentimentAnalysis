@@ -12,6 +12,7 @@ import pickle
 class Model:
 
     def __init__(self, filename=None,\
+        learningRate=0.1,\
         randInitMaxValueNN=0.0001,\
         regularisationTerm = 0.0001\
             ):
@@ -27,7 +28,7 @@ class Model:
         
         # Learning parametters (AdaGrad)
         
-        self.learningRate = 0.1
+        self.learningRate = learningRate
         self.adagradG = None; # Contain the gradient history
         self.adagradEpsilon = 1e-3;
         
@@ -55,7 +56,7 @@ class Model:
             
         else: # Loading from file
             print("Loading model from file: ", filename)
-            # The dictionary is loaded during initialisation
+            # The dictionary is loaded during initialisation, on the main script
             
             # Loading hyperparametters
             f = open(filename + "_params.pkl", 'rb')
@@ -174,7 +175,7 @@ class Model:
         if node.word is None: # Intermediate node, we continue the backpropagation
             # Backpropagate through the activation function
             # TODO: Check f'(sigS + sigD) or f'(sigS) + f'(sigD)
-            sigmaCom = np.multiply(sigmaCom, utils.actFctDerFromOutput(node.output)) # sigma .* f'(x_i) (WARNING: The node.output correspond to the output AFTER the activation fct, so we have f2'(f(x_i)))
+            sigmaCom = np.multiply(sigmaCom, utils.actFctDerFromOutput(node.output)) # sigma .* f'(a_i) (WARNING: The node.output correspond to the output AFTER the activation fct, so we have f2'(f(a_i)))
         
             # Construct the incoming output
             bc = np.concatenate((node.l.output, node.r.output)) # TODO: Right order ?
@@ -184,7 +185,7 @@ class Model:
             for k in range(self.wordVectSpace):
                 gradient.dV[k] = sigmaCom[k] * np.outer(bc, bc) # 2d*2d matrix (*d after the loop)
             gradient.dW = np.outer(sigmaCom, bc) # d*2d matrix
-            gradient.db = sigmaCom # d matrix
+            gradient.db = sigmaCom # d vector
             
             # Compute the error at the bottom of the layer
             sigmaDown = np.dot(self.W.T, sigmaCom) # (regular term)
@@ -208,7 +209,7 @@ class Model:
         Also normalize the gradient over the miniBatchSize
         WARNING: Using the formula of the paper, the regularisation
         term is not divided by 2 so the derivate added here will be
-        multiplied x2
+        multiplied x2 (usefull for gradient checking)
         WARNING: We do not regularize the bias term
         Args:
             gradient: The gradient to regularize
@@ -243,7 +244,7 @@ class Model:
             self.adagradG = self.buildEmptyGradient() # The gradient history is stored in a gradient object
             self.adagradG.dL  = np.zeros(self.L.shape) # In the case of the L history, the variable L contain the history of the whole dictionary instead of a list of modification
             
-        # We update our parametters according to AdaGrad algorithm
+        # We update our gradient history
         self.adagradG.dV  += gradient.dV  * gradient.dV
         self.adagradG.dW  += gradient.dW  * gradient.dW
         self.adagradG.db  += gradient.db  * gradient.db
@@ -259,15 +260,15 @@ class Model:
         
         # Words
         for elem in gradient.dL: # Add every word gradient individually
-            self.adagradG.dL[elem.idx,:] += elem.g * elem.g # We add the current gradient to the adagrad history
+            self.adagradG.dL[elem.idx,:] += elem.g * elem.g # We add the current word gradient to the adagrad history
             self.L[elem.idx,:] -= self.learningRate * elem.g / np.sqrt(self.adagradG.dL[elem.idx,:] + self.adagradEpsilon) # Update with adagrad
     
     def buildEmptyGradient(self):
         """
         Just construct and return an empty gradient
-        This function could be replaced by implementing a smarter ModelGrad.__iadd__ which should concider the None case
+        Note: This function could be replaced by implementing a smarter ModelGrad.__iadd__ which should concider the None case
         """
-        gradient = ModelGrad() # The gradient history is stored in a gradient object
+        gradient = ModelGrad()
         gradient.dV  = np.zeros(self.V.shape)
         gradient.dW  = np.zeros(self.W.shape)
         gradient.db  = np.zeros(self.b.shape)
@@ -294,31 +295,31 @@ class Model:
             before calling this function (the output will not be computed in this fct but the old one will 
             be used)
         Return:
-            TODO: Return also the % of correctly classified labels (and the number) (by node ?? or just the root ?? < Both)
+            Return an error object which contain the % of correctly classified labels (and the number) (both by nodes and just root)
             In the paper, they uses 4 metrics (+/- or fine grained ; all or just root)
         """
         
-        # If dataset is singleton, we encapsulate is in a list
+        # If dataset is a singleton, we encapsulate it in a list
         if not isinstance(dataset, list):
             dataset = [dataset]
         
         # Evaluate error for each given sample
         error = ModelError() # Will store the different metrics
         for sample in dataset:
-            if compute: # If not done yet, compute the Rntn
+            if compute: # If not done yet, compute the Rntn outputs
                 self.evaluateSample(sample)
             error += self._evaluateCostNode(sample.root, True) # Normalize also by number of nodes ?? << Doesn't seems to be the case in the paper
             error.nbOfSample += 1
         
-        # Add regularisation (No regularisation for the bias term)
-        costReg = self.regularisationTerm * (np.sum(self.V*self.V) + np.sum(self.W*self.W) + np.sum(self.Ws*self.Ws)) # Numpy array so element-wise multiplication (What about L)
+        # Add regularisation (No regularisation for the bias terms)
+        costReg = self.regularisationTerm * (np.sum(self.V*self.V) + np.sum(self.W*self.W) + np.sum(self.Ws*self.Ws)) # Numpy array so element-wise multiplication (What about L ??)
         error.regularisation += costReg * error.nbOfSample # Add regularisation (add N times (for each samples))
         
         return error
     
     def _evaluateCostNode(self, node, isRoot=False):
         """
-        Recursivelly compute the error
+        Recursivelly compute the error(s)
         """
         error = ModelError()
         
@@ -364,7 +365,7 @@ class Model:
     
     def setFlatWeights(self, weights):
         """
-        Restore the given weights
+        Restore the given weights from the given big 1d array
         """
         endIdx = 0 # Useful when commenting (for partial gradient checking)
         
@@ -393,7 +394,7 @@ class Model:
         Convert the given weights to a gradient object
         """
         gradient = ModelGrad()
-        endIdx = 0 # Useful when commenting (for partial gradient checking)
+        endIdx = 0 # Useful when commenting (for partial gradient checking)
         
         initIdx = 0
         endIdx = self.V.size
@@ -419,7 +420,7 @@ class Model:
     
     def gradToFlatWeigths(self, gradient):
         """
-        Return all params concatenated in a big 1d array
+        Return all params concatenated in a big 1d array (gradient version)
         """
         weights = np.concatenate((\
             gradient.dV.ravel(),\
@@ -463,15 +464,15 @@ class Model:
 
 class ModelDl:
     """
-    One struct which represent a word gradient
+    Struct which represent a word gradient
     """
     def __init__(self, idx, g):
         self.idx = idx # The word id to modify
-        self.g = g # His gradient
+        self.g = g # Its gradient (vector dim d)
     
 class ModelGrad:
     """
-    One struct which contain the differents gradients
+    Struct which contain the differents gradients
     """
 
     def __init__(self):
@@ -492,7 +493,7 @@ class ModelGrad:
         Add two gradient together
         """
         # Tensor layer
-        if gradient.dV is not None: # Case for the leaf (indead, only depend of the softmax error)
+        if gradient.dV is not None: # Case for the leaf (indead, only depend of the softmax error so no tensor gradient is set)
             self.dV  += gradient.dV # Tensor of the RNTN layer
             self.dW  += gradient.dW # Regular term of the RNTN layer
             self.db  += gradient.db # Bias for the regular term of the RNTN layer
@@ -508,7 +509,7 @@ class ModelGrad:
 
 class ModelError:
     """
-    One struct which contain the differents errors (cost, nb of correct predictions,...)
+    Struct which contain the differents errors (cost, nb of correct predictions,...)
     """
 
     def __init__(self):

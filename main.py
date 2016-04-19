@@ -91,14 +91,13 @@ def main(outputModel):
             # Backward pass (Compute the gradients for the current sample)
             if gradient is None:
                 gradient = model.buildEmptyGradient() # Initialize the gradient
-            
             gradient += model.backpropagate(trainingSample)
             
             # Minibatch: add the gradient only after X samples
             currentBatch += 1
             if currentBatch >= miniBatchSize:
-                # Add regularisation (the factor 2 will be multiplied < is useful for gradient checking)
-                gradient = model.addRegularisation(gradient, miniBatchSize) # Average the gradient over the miniBatchSize
+                # Add regularisation (the factor 2 will be multiplied << is useful for gradient checking)
+                gradient = model.addRegularisation(gradient, miniBatchSize) # Will average the gradient over the miniBatchSize
                 # Update the weights
                 model.updateWeights(gradient)
                 # Reset current batch and gradient
@@ -117,7 +116,7 @@ def main(outputModel):
         teError = model.computeError(testingSet, True)
         print("Test  error: ", teError)
         
-        # Saving the model (for each epoch)
+        # Saving the model (at each epoch)
         print("Saving model...")
         model.saveModel(outputModel) # The function also save the dictionary
         

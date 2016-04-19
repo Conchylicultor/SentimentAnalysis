@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """
-Script to expertiment and verify matrix multiplications as well
+Script to expertiment and verify the gradients as well
 as some parts of the script
 """ 
 
@@ -46,7 +46,7 @@ def computeNumericalGradient(sample, model):
         
         numGrad[p] = (loss2.getRegCost()-loss1.getRegCost())/(2*epsilon) # Derivate approximation
         
-        if p%200 == 0:
+        if p%300 == 0:
             print('Progress:', p,'/', len(initialParams))
     
     model.setFlatWeights(initialParams)
@@ -57,7 +57,7 @@ def testCheckGradient():
     Gradient checking by comparing to an approximation value
     """
     
-    # Create a sample
+    # Create an arbitrary sample
     sample = tree.Tree("(4 (2 (2 But) (2 (3 (3 (2 believe) (2 it)) (2 or)) (1 not))) (4 (2 ,) (4 (2 it) (4 (4 (2 's) (4 (2 one) (4 (2 of) (4 (4 (2 the) (4 (4 (2 most) (4 (4 beautiful) (3 (2 ,) (3 evocative)))) (2 works))) (2 (2 I) (2 (2 've) (2 seen))))))) (2 .)))))")
     #sample.printTree() # Check parsing and sample loading
     

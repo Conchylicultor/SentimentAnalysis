@@ -17,6 +17,10 @@ class Word:
 
 class Vocab:
     def __init__(self, filename=None):
+        """
+        If the parametters is set, it will try to load the dictionary from
+        the given filename
+        """
         self.dictionary = {} # List of Words (dictionary)
         self.currentIdx = 0
         if filename is not None:
@@ -24,6 +28,7 @@ class Vocab:
             self.dictionary = pickle.load(f) # If the file is empty the ValueError will be thrown
             f.close()
             print(len(self.dictionary), " words loaded!")
+            currentIdx = len(self.dictionary) # In theory, all the words already have been loaded but we never know
             
     
     def addWord(self, newWord):
@@ -62,6 +67,6 @@ class Vocab:
         
 # Global variable which store all the words
 vocab = None
-def initVocab(saveName = None): # Is initialized in main.py
+def initVocab(filename = None): # Is initialized in main.py
     global vocab
-    vocab = Vocab(saveName)
+    vocab = Vocab(filename)

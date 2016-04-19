@@ -5,7 +5,13 @@ Requirement:
 * Python3
 * Numpy
 
-The parametters are defined on rntnmodel.py and main.py
+The parametters are defined on rntnmodel.py and main.py. To start the training, just type:
+
+`
+python3 main.py [optional_save_name]
+`
+
+By default, it will save and record the results on '_save/training_'
 
 The project contains different scripts:
 * main.py: main loop here: train the model and record the results

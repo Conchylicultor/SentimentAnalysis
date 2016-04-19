@@ -11,7 +11,6 @@ import utils
 class Node:
     def __init__(self):
         # Tree structure
-        #self.p = None # Parent (Usefull ??)
         self.l = None
         self.r = None
         
@@ -23,7 +22,7 @@ class Node:
         self.label = -1 # Sentiment 0-4 (Ground truth)
         
         # For backpropagation:
-        self.output  = None # Output of the tensor network AFTER the activation function (same as .word.vect if leaf) (of dimention wordVectSpace)
+        self.output  = None # Output of the tensor network AFTER the activation function (or same as .word.vect if leaf) (dimention wordVectSpace)
     
     def printInd(self, *args):
         """
@@ -40,7 +39,7 @@ class Tree:
         """
         Generate the tree by parsing the given sentence.
         Args:
-            sentence: sentence at the PTB format
+            sentence: sentence at the PTB format (string)
         """
         self.root = self._parseSentence(sentence, 0) # Generate the tree
         # self.printTree() # Debug
@@ -53,7 +52,7 @@ class Tree:
         patternRoot = '\(([0-9]+) (.*)\)' # For the label and the word/subsentence
         
         # Extract infos
-        m = re.match(patternRoot, sentence) # Matching (TODO: Compile the regex for better perfs)
+        m = re.match(patternRoot, sentence) # Matching (TODO: Compile the regex for better perfs, not a big impact)
         label = int(m.group(1)) # Extract the sentiment label
         subsequence = m.group(2) # Extract the next subsentence (or the final word)
         
