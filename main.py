@@ -19,8 +19,7 @@ miniBatchSize = 25
 adagradResetNbIter = 0 # Reset every X iterations (0 for never)
 
 # Path and name where the infos will be saved
-outputModel = "save/model"
-outputResult = "results/train.csv"
+outputModel = "save/training"
 
 def main():
     print("Welcome into RNTN implementation 0.6")
@@ -65,7 +64,7 @@ def main():
     print(paramsStr)
     
     # Indicate a new training on the result file
-    resultFile = open(outputResult, "a") # Open the file (cursor at the end)
+    resultFile = open(outputModel + "_train.csv", "a") # Open the file (cursor at the end)
     resultFile.write(paramsStr)
     resultFile.write("Epoch|Train|Test\n") # Record the data for the learning curve
     resultFile.close()
@@ -99,7 +98,7 @@ def main():
             currentBatch += 1
             if currentBatch >= miniBatchSize:
                 # Add regularisation (the factor 2 will be multiplied < is useful for gradient checking)
-                gradient = model.addRegularisation(gradient, miniBatchSize)
+                gradient = model.addRegularisation(gradient, miniBatchSize) # Average the gradient over the miniBatchSize
                 # Update the weights
                 model.updateWeights(gradient)
                 # Reset current batch and gradient

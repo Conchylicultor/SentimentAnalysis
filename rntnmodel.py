@@ -197,14 +197,15 @@ class Model:
             gradient += self._backpropagate(node.r, sigmaDown[d:2*d]) # Sum all gradients
         else: # Leaf: Update L
             # dL contain the list of all words which will be modified this pass
-            gradient.dL = [(node.word.idx, np.copy(sigmaCom))] # Copy probably useless, sigmaCom probably cannot be modified anymore on the other nodes so we could directly pass the reference
+            gradient.dL = [ModelDl(node.word.idx, np.copy(sigmaCom))] # Copy probably useless, sigmaCom probably cannot be modified anymore on the other nodes so we could directly pass the reference
         
         return gradient
     
     def addRegularisation(self, gradient, miniBatchSize):
         """
-        Add the regularisation term to the givengradient and
+        Add the regularisation term to the given gradient and
         return it (The given gradient is also modified)
+        Also normalize the gradient over the miniBatchSize
         WARNING: Using the formula of the paper, the regularisation
         term is not divided by 2 so the derivate added here will be
         multiplied x2
@@ -213,20 +214,21 @@ class Model:
             gradient: The gradient to regularize
             miniBatchSize: The number of sample taken for this gradient
         """
-        factor = 2 * self.regularisationTerm * miniBatchSize # Factor 2 for the derivate of the square
+        factor = 2 * self.regularisationTerm # Factor 2 for the derivate of the square
         
         # Tensor layer
-        gradient.dV  += factor*self.V # Tensor of the RNTN layer
-        gradient.dW  += factor*self.W # Regular term of the RNTN layer
-        #gradient.db  += factor*self.b # Bias for the regular term of the RNTN layer
+        gradient.dV = gradient.dV/miniBatchSize + factor*self.V
+        gradient.dW = gradient.dW/miniBatchSize + factor*self.W
+        gradient.db = gradient.db/miniBatchSize
         
         # Softmax
-        gradient.dWs += factor*self.Ws # Softmax classifier
-        #gradient.dbs += factor*self.bs # Bias of the softmax classifier
+        gradient.dWs = gradient.dWs/miniBatchSize + factor*self.Ws
+        gradient.dbs = gradient.dbs/miniBatchSize
         
         # Words
-        # TODO: What about dL ??
-        # gradient.dL
+        # TODO: What about dL regularisation ??
+        for elem in gradient.dL: # Add every word gradient individually
+            elem.g /= miniBatchSize
         
         return gradient
     
@@ -257,8 +259,8 @@ class Model:
         
         # Words (WARNING: Classical update for the word weights)
         for elem in gradient.dL: # Add every word gradient individually
-            self.adagradG.dL[elem[0],:]  += elem[1] * elem[1] # We add the current gradient to the adagrad history
-            self.L[elem[0],:] -= self.learningRate * elem[1] / np.sqrt(self.adagradG.dL[elem[0],:] + self.adagradEpsilon) # Update with adagrad
+            self.adagradG.dL[elem.idx,:]  += elem.g * elem.g # We add the current gradient to the adagrad history
+            self.L[elem.idx,:] -= self.learningRate * elem.g / np.sqrt(self.adagradG.dL[elem.idx,:] + self.adagradEpsilon) # Update with adagrad
     
     def buildEmptyGradient(self):
         """
@@ -271,7 +273,7 @@ class Model:
         gradient.db  = np.zeros(self.b.shape)
         gradient.dWs = np.zeros(self.Ws.shape)
         gradient.dbs = np.zeros(self.bs.shape)
-        gradient.dL  = None
+        gradient.dL  = []
         
         return gradient
         
@@ -459,6 +461,14 @@ class Model:
             bs=self.bs,\
             L=self.L)
 
+class ModelDl:
+    """
+    One struct which represent a word gradient
+    """
+    def __init__(self, idx, g):
+        self.idx = idx # The word id to modify
+        self.g = g # His gradient
+    
 class ModelGrad:
     """
     One struct which contain the differents gradients
@@ -475,7 +485,7 @@ class ModelGrad:
         self.dbs = None # Bias of the softmax classifier
         
         # Words << Contained in the vocab variable
-        self.dL  = None # List of turple (index, dL_i)
+        self.dL  = [] # List of ModelDl (index, dL_i)
         
     def __iadd__(self, gradient):
         """
