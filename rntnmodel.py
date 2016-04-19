@@ -257,9 +257,9 @@ class Model:
         self.Ws -= self.learningRate * gradient.dWs / np.sqrt(self.adagradG.dWs + self.adagradEpsilon)
         self.bs -= self.learningRate * gradient.dbs / np.sqrt(self.adagradG.dbs + self.adagradEpsilon)
         
-        # Words (WARNING: Classical update for the word weights)
+        # Words
         for elem in gradient.dL: # Add every word gradient individually
-            self.adagradG.dL[elem.idx,:]  += elem.g * elem.g # We add the current gradient to the adagrad history
+            self.adagradG.dL[elem.idx,:] += elem.g * elem.g # We add the current gradient to the adagrad history
             self.L[elem.idx,:] -= self.learningRate * elem.g / np.sqrt(self.adagradG.dL[elem.idx,:] + self.adagradEpsilon) # Update with adagrad
     
     def buildEmptyGradient(self):
@@ -502,10 +502,7 @@ class ModelGrad:
         self.dbs += gradient.dbs # Bias of the softmax classifier
         
         # Words
-        if self.dL is None: # Backpropagate the dL gradient on the upper nodes
-            self.dL = gradient.dL
-        elif gradient.dL is not None: # In this case, we merge the two lists
-            self.dL  += gradient.dL
+        self.dL  += gradient.dL # We merge the two lists (Backpropagate the dL gradient on the upper nodes)
         
         return self
 

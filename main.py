@@ -19,10 +19,11 @@ miniBatchSize = 25
 adagradResetNbIter = 0 # Reset every X iterations (0 for never)
 
 # Path and name where the infos will be saved
-outputModel = "save/training"
+outputDir = "save/"
+outputNameDefault = "training"
 
-def main():
-    print("Welcome into RNTN implementation 0.6")
+def main(outputModel):
+    print("Welcome into RNTN implementation 0.6 (recording will be on ", outputModel, ")")
     
     random.seed("MetaMind") # Lucky seed ? Fixed seed for replication
     np.random.seed(7)
@@ -80,7 +81,6 @@ def main():
             model.resetAdagrad() # Start with a clear history
         
         # Loop over the training samples
-        # TODO: Use mini-batch instead of online learning
         nbSampleCovered = 1 # To plot the progression of the epoch
         gradient = None
         currentBatch = 0
@@ -121,7 +121,7 @@ def main():
         print("Saving model...")
         model.saveModel(outputModel) # The function also save the dictionary
         
-        resultFile = open(outputResult, "a") # Open the file (cursor at the end)
+        resultFile = open(outputModel + "_train.csv", "a") # Open the file (cursor at the end)
         resultFile.write("%d|%s|%s\n" % (i, trError.toCsv(), teError.toCsv())) # Record the data for the learning curves
         resultFile.close()
         
@@ -134,4 +134,8 @@ def main():
     
 
 if __name__ == "__main__":
-    main()
+    # Simple parsing to get the model name
+    outputName = outputNameDefault
+    if len(sys.argv) > 1:
+        outputName = sys.argv[1]
+    main(outputDir + outputName)
