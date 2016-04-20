@@ -42,7 +42,7 @@ def actFctDerFromOutput(x):
     
 def loadDataset(filename):
     """
-    Load and return the dataset given in parametter
+    Load and return the dataset given in parameter
     """
 
     dataFile = open(filename, 'r')

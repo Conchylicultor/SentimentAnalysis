@@ -14,14 +14,14 @@ import rntnmodel
     
 
 # Gradient checking
-    
+
 def computeNumericalGradient(sample, model):
     """
     Add and substract epsilon to compute an aproximation of the gradient
     """
     print("Try computing the numerical gradient...")
     
-    # Merge all parametters
+    # Merge all parameters
     initialParams = model.getFlatWeights()
     
     numGrad = np.zeros(initialParams.shape)

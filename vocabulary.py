@@ -18,7 +18,7 @@ class Word:
 class Vocab:
     def __init__(self, filename=None):
         """
-        If the parametters is set, it will try to load the dictionary from
+        If the parameters is set, it will try to load the dictionary from
         the given filename
         """
         self.dictionary = {} # List of Words (dictionary)

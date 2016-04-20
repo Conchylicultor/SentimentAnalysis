@@ -13,7 +13,7 @@ import train
 import utils
 import vocabulary
 
-# Parametters
+# Parameters
 nbEpoch = 30
 miniBatchSize = 25
 adagradResetNbIter = 5 # Reset every X iterations (0 for never)
@@ -65,6 +65,7 @@ def main(outputName):
                     model, error = train.train(outputName, datasets, params)
 
     # TODO: Plot the cross-validation curve
+    # TODO: Plot a heatmap of the hyperparameters to help tunning them ?
 
     ## Not here
     #print("Training complete, validating...")

@@ -1,1 +1,1 @@
-This folder contain the models weigths and parametters 
+This folder contain the models weigths and parameters

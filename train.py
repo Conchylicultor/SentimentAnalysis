@@ -23,8 +23,8 @@ def train(outputName, datasets, params):
     """
     
     print("Start training...")
-    print("Parametters:")
-    for key, value in params.items():
+    print("Parameters:")
+    for key, value in params.items(): # TODO: Would be better if we keep a constant order (alphabetical)
         print("-", key, ":", value)
         outputName += "-" + key + "=" + str(value)
         
@@ -136,6 +136,8 @@ def train(outputName, datasets, params):
     # TODO: Fixed axis ? (easier to compare)
     
     plt.figure(1, figsize=(20, 10), dpi=80)
+    plt.clf() # Reset
+    
     plt.subplot(2, 2, 1)
     plt.plot(xEpoch, trRegCost)
     plt.plot(xEpoch, teRegCost)

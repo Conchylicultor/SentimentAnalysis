@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """
-Class which define the model and store the parametters
+Class which define the model and store the parameters
 """
 
 import numpy as np
@@ -19,21 +19,21 @@ class Model:
         """
         WARNING: Has to be called after loading the vocabulary
         """
-        # Model parametters
+        # Model parameters
         
         self.wordVectSpace = 25 # World vector size
         self.nbClass = 5 # 0-4 sentiments
         
         self.regularisationTerm = regularisationTerm # Lambda
         
-        # Learning parametters (AdaGrad)
+        # Learning parameters (AdaGrad)
         
         self.learningRate = learningRate
         self.adagradG = None; # Contain the gradient history
         self.adagradEpsilon = 1e-3;
         
         if filename is None:
-            # Initialisation parametters
+            # Initialisation parameters
             
             self.randInitMaxValueWords = 0.1 # For initialize the vector words
             self.randInitMaxValueNN = randInitMaxValueNN # For initialize the NN weights
@@ -58,7 +58,7 @@ class Model:
             print("Loading model from file: ", filename)
             # The dictionary is loaded during initialisation, on the main script
             
-            # Loading hyperparametters
+            # Loading hyperparameters
             f = open(filename + "_params.pkl", 'rb')
             paramsSave = pickle.load(f)
             f.close()
@@ -288,10 +288,10 @@ class Model:
         
     def computeError(self, dataset, compute = False):
         """
-        Evaluate the cost error of the given dataset using the parametters
+        Evaluate the cost error of the given dataset using the parameters
         Args:
             dataset: Collection of the sample to evaluate (can also be a single element)
-            compute: If false, the dataset must have completed the forward pass with the given parametters
+            compute: If false, the dataset must have completed the forward pass with the given parameters
             before calling this function (the output will not be computed in this fct but the old one will 
             be used)
         Return:
@@ -438,12 +438,12 @@ class Model:
         """
         Save the model at the given destination (the destination should not contain
         the extension)
-        This save both model parametters and dictionary
+        This save both model parameters and dictionary
         """
         # Vocabulary
         vocabulary.vocab.save(destination) # The fct will add the extention
         
-        # Hyperparametters
+        # Hyperparameters
         paramsSave = {\
             'wordVectSpace':      self.wordVectSpace,\
             'nbClass':            self.nbClass,\
