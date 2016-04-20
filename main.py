@@ -9,21 +9,24 @@ Use python 3
 import os, sys
 import random
 import numpy as np
+import train
 import utils
 import vocabulary
-import rntnmodel
 
 # Parametters
 nbEpoch = 30
 miniBatchSize = 25
-adagradResetNbIter = 0 # Reset every X iterations (0 for never)
+adagradResetNbIter = 5 # Reset every X iterations (0 for never)
+
+learningRate = 0.05
+regularisationTerm = 0.0001
 
 # Path and name where the infos will be saved
 outputDir = "save/"
-outputNameDefault = "training"
+outputNameDefault = "train"
 
-def main(outputModel):
-    print("Welcome into RNTN implementation 0.6 (recording will be on ", outputModel, ")")
+def main(outputName):
+    print("Welcome into RNTN implementation 0.6 (recording will be on ", outputName, ")")
     
     random.seed("MetaMind") # Lucky seed ? Fixed seed for replication
     np.random.seed(7)
@@ -33,11 +36,12 @@ def main(outputModel):
     vocabulary.initVocab()
     
     # Loading dataset
-    trainingSet = utils.loadDataset("trees/train.txt");
+    datasets = {}
+    datasets['training'] = utils.loadDataset("trees/train.txt");
     print("Training loaded !")
-    testingSet = utils.loadDataset("trees/test.txt");
+    datasets['testing'] = utils.loadDataset("trees/test.txt");
     print("Testing loaded !")
-    validationSet = utils.loadDataset("trees/dev.txt");
+    datasets['validating'] = utils.loadDataset("trees/dev.txt");
     print("Validation loaded !")
     
     print("Datasets loaded !")
@@ -45,90 +49,28 @@ def main(outputModel):
     
     # Datatransform (normalisation, remove outliers,...) ?? > Not here
     
-    # Creating the model
-    model = rntnmodel.Model(regularisationTerm = 0)
-    
-    # Plot the initial error (wait less time before seing if our model is learning)
-    #print("Initial errors...")
-    #trError = model.computeError(trainingSet, True)
-    #print("Train error: ", trError)
-    #teError = model.computeError(testingSet, True)
-    #print("Test  error: ", teError)
-    
-    # TODO: Include the training in the cross-validation loop (tune parametters)
-    print("Start training...")
-    print("Parametters:")
-    paramsStr  = "- Minibatch size: %d\n" % miniBatchSize
-    paramsStr += "- Learning rate: %f\n" % model.learningRate
-    paramsStr += "- Regularisation: %f\n" % model.regularisationTerm
-    paramsStr += "- Adagrad reset after: %d\n" % adagradResetNbIter
-    print(paramsStr)
-    
-    # Indicate a new training on the result file
-    resultFile = open(outputModel + "_train.csv", "a") # Open the file (cursor at the end)
-    resultFile.write(paramsStr)
-    resultFile.write("Epoch|Train|Test\n") # Record the data for the learning curve
-    resultFile.close()
-    
-    # Main loop
-    for i in range(nbEpoch):
-        print("Epoch: ", i)
-        
-        # Randomly shuffle the dataset
-        random.shuffle(trainingSet)
-        
-        if adagradResetNbIter != 0 and i % adagradResetNbIter == 0: # Reset every X epochs
-            model.resetAdagrad() # Start with a clear history
-        
-        # Loop over the training samples
-        nbSampleCovered = 1 # To plot the progression of the epoch
-        gradient = None
-        currentBatch = 0
-        for trainingSample in trainingSet: # Select next the training sample
-            # Forward pass
-            model.evaluateSample(trainingSample) # Compute the output recursivelly
-            
-            # Backward pass (Compute the gradients for the current sample)
-            if gradient is None:
-                gradient = model.buildEmptyGradient() # Initialize the gradient
-            gradient += model.backpropagate(trainingSample)
-            
-            # Minibatch: add the gradient only after X samples
-            currentBatch += 1
-            if currentBatch >= miniBatchSize:
-                # Add regularisation (the factor 2 will be multiplied << is useful for gradient checking)
-                gradient = model.addRegularisation(gradient, miniBatchSize) # Will average the gradient over the miniBatchSize
-                # Update the weights
-                model.updateWeights(gradient)
-                # Reset current batch and gradient
-                currentBatch = 0
-                gradient = None
-            
-            # Plot progress every 10% of dataset covered
-            if nbSampleCovered % (len(trainingSet)//10) == 0:
-                print("%d%% of dataset covered (%d/%d)" % ((nbSampleCovered*100 // len(trainingSet) + 1), nbSampleCovered, len(trainingSet)))
-            nbSampleCovered += 1
-        
-        # Compute new testing error
-        print("Compute errors...")
-        trError = model.computeError(trainingSet)
-        print("Train error: ", trError)
-        teError = model.computeError(testingSet, True)
-        print("Test  error: ", teError)
-        
-        # Saving the model (at each epoch)
-        print("Saving model...")
-        model.saveModel(outputModel) # The function also save the dictionary
-        
-        resultFile = open(outputModel + "_train.csv", "a") # Open the file (cursor at the end)
-        resultFile.write("%d|%s|%s\n" % (i, trError.toCsv(), teError.toCsv())) # Record the data for the learning curves
-        resultFile.close()
-        
-        
-    print("Training complete, validating...")
-    vaError = model.computeError(validationSet, True)
-    print("Validation error: ", vaError)
-    
+    # Cross-validation loop (too long for complete k-fold cross validation so just train/test)
+    for miniB in [25, 1]: # MiniBatchSize
+        for resetAda in [0, 3, 6, 10]: # Adagrad reset
+            for learnRate in [0.1, 0.01, 0.001]: # Learning rate
+                for regular in [0, 0.00001, 0.0001, 0.001]: # Regularisation
+                    params = {}
+                    params["nbEpoch"]            = nbEpoch
+                    params["learningRate"]       = learnRate
+                    params["regularisationTerm"] = regular
+                    params["adagradResetNbIter"] = resetAda
+                    params["miniBatchSize"]      = miniB
+                    # No need to reset the vocabulary values (contained in model.L so automatically reset)
+                    # Same for the training and testing set (output values recomputed at each iterations)
+                    model, error = train.train(outputName, datasets, params)
+
+    # TODO: Plot the cross-validation curve
+
+    ## Not here
+    #print("Training complete, validating...")
+    #vaError = model.computeError(datasets['validating'], True)
+    #print("Validation error: ", vaError)
+
     print("The End. Thank you for using this program!")
     
 
