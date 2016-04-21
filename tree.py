@@ -52,12 +52,12 @@ class Tree:
         patternRoot = '\(([0-9]+) (.*)\)' # For the label and the word/subsentence
         
         # Extract infos
-        m = re.match(patternRoot, sentence) # Matching (TODO: Compile the regex for better perfs, not a big impact)
+        m = re.match(patternRoot, sentence) # Matching (TODO: We could compile the regex for better perfs but not a big impact)
         label = int(m.group(1)) # Extract the sentiment label
         subsequence = m.group(2) # Extract the next subsentence (or the final word)
         
         # Try matching deeper nodes
-        positionBreak = self._computeSplitPosition(subsequence)# Divide the substring in two
+        positionBreak = self._computeSplitPosition(subsequence) # Divide the substring in two
         
         # Node creation
         node = Node()

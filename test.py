@@ -10,7 +10,7 @@ import utils
 import rntnmodel
 import vocabulary
 
-inputModel = "save/training"
+inputModel = "save/result"
 
 def main():
     print("Welcome into RNTN implementation 0.1")

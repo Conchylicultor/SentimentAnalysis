@@ -14,12 +14,12 @@ import utils
 import vocabulary
 
 # Parameters (are arrays for the grid search)
-nbEpoch = 30
-miniBatchSize = [20]
-adagradResetNbIter = [10] # Reset every X iterations (0 for never)
+nbEpoch = 60
+miniBatchSize = [5]
+adagradResetNbIter = [6] # Reset every X iterations (0 for never) << does not seem to have that much impact except the performance drop at each reset on the training set
 
-learningRate = [0.01]
-regularisationTerm = [0]
+learningRate = [0.01] # << Seems to be the best
+regularisationTerm = [0.00001, 0.0001, 0.001, 0.01]
 
 # Path and name where the infos will be saved
 outputDir = "save/"
@@ -62,7 +62,7 @@ def main(outputName):
                     params["miniBatchSize"]      = mBS
                     # No need to reset the vocabulary values (contained in model.L so automatically reset)
                     # Same for the training and testing set (output values recomputed at each iterations)
-                    model, error = train.train(outputName, datasets, params)
+                    model, errors = train.train(outputName, datasets, params)
 
     # TODO: Plot the cross-validation curve
     # TODO: Plot a heat map of the hyperparameters cost to help tunning them ?

@@ -95,6 +95,9 @@ class Model:
         self._evaluateNode(sample.root)
 
     def _evaluateNode(self, node):
+        """
+        Same as evaluate sample but for a node (will compute all children recursivelly)
+        """
         #node.printInd("Node:")
         #node.printInd("----------")
         if node.word is not None: # Leaf
@@ -135,7 +138,7 @@ class Model:
         #   E: Cost of the current prediction (E = cost(softmax(Ws*a + bs)) = cost(y))
         #   t: Gound truth prediction
         # We then have:
-        #   t -> a -> t -> a -> ... t -> a(last layer) -> z (projection on dim 5) -> y (softmax prediction) -> E (cost)
+        #   x -> a -> x -> a -> ... x -> a(last layer) -> z (projection on dim 5) -> y (softmax prediction) -> E (cost)
         
         return self._backpropagate(sample.root, None) # No incoming error for the root node (except the one coming from softmax)
     
@@ -166,15 +169,17 @@ class Model:
         # Error coming through the softmax classifier (d*1 vector)
         sigmaSoft = np.dot(self.Ws.T, dE_dz) # WsT (t_i-y_i)
         
+        sigmaCom = sigmaSoft
+        if sigmaDown is not None: # Not root node
+            sigmaCom += sigmaDown # We also add the incoming error from the upper node
+        # Otherwise (root node), only softmax error is incoming
+        
         if node.word is None: # Intermediate node, we continue the backpropagation
             # Backpropagate through the activation function
-            sigmaCom = np.multiply(sigmaSoft, utils.actFctDerFromOutput(node.output)) # Go through activavion fct: sigma .* f'(a_i) (WARNING: The node.output correspond to the output AFTER the activation fct, so we have f2'(f(a_i)))
-            if sigmaDown is not None: # Not root node
-                sigmaCom += np.multiply(sigmaDown, utils.actFctDerFromOutput(node.output)) # We also add the incoming error from the upper node
-            # Otherwise (root node), only softmax error is incoming
+            sigmaCom = np.multiply(sigmaCom, utils.actFctDerFromOutput(node.output)) # sigma .* f'(a_i) (WARNING: The node.output correspond to the output AFTER the activation fct, so we have f2'(f(a_i)))
 
             # Construct the incoming output
-            bc = np.concatenate((node.l.output, node.r.output)) # TODO: Right order ?
+            bc = np.concatenate((node.l.output, node.r.output))
             
             # Compute the gradient of the tensor
             gradient.dV = np.zeros((self.wordVectSpace, 2*self.wordVectSpace, 2*self.wordVectSpace))
@@ -194,10 +199,6 @@ class Model:
             gradient += self._backpropagate(node.r, sigmaDown[d:2*d]) # Sum all gradients
         else: # Leaf: Update L
             # If the node is a leaf, we do not go through the activation fct
-            sigmaCom = sigmaSoft
-            if sigmaDown is not None: # Not root node
-                sigmaCom += sigmaDown # We also add the incoming error from the upper node
-            # Otherwise, only softmax error is incoming (case where the tree is a unique word)
             
             # dL contain the list of all words which will be modified this pass
             gradient.dL = [ModelDl(node.word.idx, np.copy(sigmaCom))] # Copy probably useless, sigmaCom probably cannot be modified anymore on the other nodes so we could directly pass the reference
@@ -260,10 +261,10 @@ class Model:
         self.Ws -= self.learningRate * gradient.dWs / np.sqrt(self.adagradG.dWs + self.adagradEpsilon)
         self.bs -= self.learningRate * gradient.dbs / np.sqrt(self.adagradG.dbs + self.adagradEpsilon)
         
-        # Words
+        # Same thing for the words
         for elem in gradient.dL: # Add every word gradient individually
             self.adagradG.dL[elem.idx,:] += elem.g * elem.g # We add the current word gradient to the adagrad history
-            self.L[elem.idx,:] -= self.learningRate * elem.g / np.sqrt(self.adagradG.dL[elem.idx,:] + self.adagradEpsilon) # Update with adagrad
+            self.L[elem.idx,:] -= self.learningRate * elem.g / np.sqrt(self.adagradG.dL[elem.idx,:] + self.adagradEpsilon) # Update with AdaGrad
     
     def buildEmptyGradient(self):
         """
@@ -327,8 +328,8 @@ class Model:
         
         # Cost at the current node
         y = self._predictNode(node) # Softmax prediction
-        error.cost     = -np.log(y[node.label]) # We only take the cell which correspond to the label, all other terms are null
-        labelPredicted = np.argmax(y) # Predicted label
+        error.cost = -np.log(y[node.label]) # We only take the cell which correspond to the label, all other terms are null
+        labelPredicted = np.argmax(y) # Predicted label (0-4)
         sucess = int(labelPredicted == node.label)
         error.nbNodeCorrect = sucess
         if isRoot:

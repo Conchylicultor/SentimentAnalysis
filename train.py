@@ -24,6 +24,7 @@ def train(outputName, datasets, params):
     
     print("Start training...")
     
+    # Plot the parameters
     print("Parameters:")
     for key in sorted(params): # Get all params
         print("-", key, ":", params[key])
@@ -33,7 +34,7 @@ def train(outputName, datasets, params):
     trainingSet = datasets["training"]
     testingSet  = datasets["testing"]
     
-    assert len(params) == 5 # In case we will need to change or add a parameters someday, make sure all parametters are extracted and used
+    assert len(params) == 5 # In case we will need to change or add a parameters someday, make sure all parameters are extracted and used
     nbEpoch            = params["nbEpoch"]
     learningRate       = params["learningRate"]
     regularisationTerm = params["regularisationTerm"]
@@ -64,7 +65,7 @@ def train(outputName, datasets, params):
     
     # Main loop
     for i in range(nbEpoch):
-        print("Epoch: ", i)
+        print("Epoch: %d/%d" % (i+1, nbEpoch))
         
         # Randomly shuffle the dataset
         random.shuffle(trainingSet)
@@ -137,7 +138,7 @@ def train(outputName, datasets, params):
         teRoot.append(teErrors[i].getPercentRoot())
     
     # Create and save the graphs
-    # TODO: Add labels 'Training'/'Testing'
+    # TODO: Add labels 'Training'/'Testing' (even if kind of obvious)
     # TODO: Fixed axis ? (easier to compare)
     
     plt.figure(1, figsize=(20, 10), dpi=80)
