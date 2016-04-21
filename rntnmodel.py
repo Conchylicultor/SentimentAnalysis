@@ -11,10 +11,10 @@ import pickle
 
 class Model:
 
-    def __init__(self, filename=None,\
-        learningRate=0.1,\
-        randInitMaxValueNN=0.0001,\
-        regularisationTerm = 0.0001\
+    def __init__(self, filename=None,
+        learningRate=0.1,
+        randInitMaxValueNN=0.0001,
+        regularisationTerm = 0.0001
             ):
         """
         WARNING: Has to be called after loading the vocabulary
@@ -355,12 +355,12 @@ class Model:
         """
         Return all params concatenated in a big 1d array
         """
-        weights = np.concatenate((\
-            self.V.ravel(),\
-            self.W.ravel(),\
-            self.b.ravel(),\
-            self.Ws.ravel(),\
-            self.bs.ravel()\
+        weights = np.concatenate((
+            self.V.ravel(),
+            self.W.ravel(),
+            self.b.ravel(),
+            self.Ws.ravel(),
+            self.bs.ravel()
             ))
         # TODO: Try on L
         return weights
@@ -424,12 +424,12 @@ class Model:
         """
         Return all params concatenated in a big 1d array (gradient version)
         """
-        weights = np.concatenate((\
-            gradient.dV.ravel(),\
-            gradient.dW.ravel(),\
-            gradient.db.ravel(),\
-            gradient.dWs.ravel(),\
-            gradient.dbs.ravel()\
+        weights = np.concatenate((
+            gradient.dV.ravel(),
+            gradient.dW.ravel(),
+            gradient.db.ravel(),
+            gradient.dWs.ravel(),
+            gradient.dbs.ravel()
             ))
         # TODO: Try on L
         return weights
@@ -446,22 +446,22 @@ class Model:
         vocabulary.vocab.save(destination) # The fct will add the extention
         
         # Hyperparameters
-        paramsSave = {\
-            'wordVectSpace':      self.wordVectSpace,\
-            'nbClass':            self.nbClass,\
-            'regularisationTerm': self.regularisationTerm,\
+        paramsSave = {
+            'wordVectSpace':      self.wordVectSpace,
+            'nbClass':            self.nbClass,
+            'regularisationTerm': self.regularisationTerm,
             }
         f = open(destination + "_params.pkl", 'wb')
         pickle.dump(paramsSave, f)
         f.close()
         
         # Weights
-        np.savez(destination + "_model",\
-            V=self.V,\
-            W=self.W,\
-            b=self.b,\
-            Ws=self.Ws,\
-            bs=self.bs,\
+        np.savez(destination + "_model",
+            V=self.V,
+            W=self.W,
+            b=self.b,
+            Ws=self.Ws,
+            bs=self.bs,
             L=self.L)
 
 class ModelDl:
@@ -531,14 +531,14 @@ class ModelError:
         In the current version, it is not possible to plot inside a tree for debugging (crash when
         divide by 0), it is quite easy to correct though if really needed
         """
-        return "Cost=%4f | CostReg=%4f | Percent=%2f%% (%d/%d) | Percent(Root)=%2f%% (%d/%d)" % (\
-            self.cost/self.nbOfSample, \
-            self.getRegCost(),\
-            self.getPercentNodes(),\
-            self.nbNodeCorrect,\
-            self.nbOfNodes,\
-            self.getPercentRoot(),\
-            self.nbRootCorrect,\
+        return "Cost=%4f | CostReg=%4f | Percent=%2f%% (%d/%d) | Percent(Root)=%2f%% (%d/%d)" % (
+            self.cost/self.nbOfSample,
+            self.getRegCost(),
+            self.getPercentNodes(),
+            self.nbNodeCorrect,
+            self.nbOfNodes,
+            self.getPercentRoot(),
+            self.nbRootCorrect,
             self.nbOfSample)
     
     def toCsv(self):

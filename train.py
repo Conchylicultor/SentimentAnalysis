@@ -23,15 +23,17 @@ def train(outputName, datasets, params):
     """
     
     print("Start training...")
+    
     print("Parameters:")
-    for key, value in params.items(): # TODO: Would be better if we keep a constant order (alphabetical)
-        print("-", key, ":", value)
-        outputName += "-" + key + "=" + str(value)
-        
+    for key in sorted(params): # Get all params
+        print("-", key, ":", params[key])
+        outputName += "-" + key + "=" + str(params[key])
+
     # Extract the given arguments
     trainingSet = datasets["training"]
     testingSet  = datasets["testing"]
     
+    assert len(params) == 5 # In case we will need to change or add a parameters someday, make sure all parametters are extracted and used
     nbEpoch            = params["nbEpoch"]
     learningRate       = params["learningRate"]
     regularisationTerm = params["regularisationTerm"]
@@ -39,7 +41,10 @@ def train(outputName, datasets, params):
     miniBatchSize      = params["miniBatchSize"]
     
     # Creating the model
-    model = rntnmodel.Model(regularisationTerm = regularisationTerm, learningRate = learningRate)
+    model = rntnmodel.Model(
+        regularisationTerm = regularisationTerm,
+        learningRate = learningRate
+        )
     
     trErrors = []
     teErrors = []
