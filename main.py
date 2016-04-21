@@ -13,13 +13,13 @@ import train
 import utils
 import vocabulary
 
-# Parameters
+# Parameters (are arrays for the grid search)
 nbEpoch = 30
-miniBatchSize = 25
-adagradResetNbIter = 5 # Reset every X iterations (0 for never)
+miniBatchSize = [20]
+adagradResetNbIter = [10] # Reset every X iterations (0 for never)
 
-learningRate = 0.05
-regularisationTerm = 0.0001
+learningRate = [0.01]
+regularisationTerm = [0]
 
 # Path and name where the infos will be saved
 outputDir = "save/"
@@ -49,25 +49,25 @@ def main(outputName):
     
     # Datatransform (normalisation, remove outliers,...) ?? > Not here
     
-    # Cross-validation loop (too long for complete k-fold cross validation so just train/test)
-    for miniB in [25, 1]: # MiniBatchSize
-        for resetAda in [0, 3, 6, 10]: # Adagrad reset
-            for learnRate in [0.1, 0.01, 0.001]: # Learning rate
-                for regular in [0, 0.00001, 0.0001, 0.001]: # Regularisation
+    # Grid search on our hyperparameters (too long for complete k-fold cross validation so just train/test)
+    for mBS in miniBatchSize:
+        for aRNI in adagradResetNbIter:
+            for lR in learningRate:
+                for rT in regularisationTerm:
                     params = {}
                     params["nbEpoch"]            = nbEpoch
-                    params["learningRate"]       = learnRate
-                    params["regularisationTerm"] = regular
-                    params["adagradResetNbIter"] = resetAda
-                    params["miniBatchSize"]      = miniB
+                    params["learningRate"]       = lR
+                    params["regularisationTerm"] = rT
+                    params["adagradResetNbIter"] = aRNI
+                    params["miniBatchSize"]      = mBS
                     # No need to reset the vocabulary values (contained in model.L so automatically reset)
                     # Same for the training and testing set (output values recomputed at each iterations)
                     model, error = train.train(outputName, datasets, params)
 
     # TODO: Plot the cross-validation curve
-    # TODO: Plot a heatmap of the hyperparameters to help tunning them ?
+    # TODO: Plot a heat map of the hyperparameters cost to help tunning them ?
 
-    ## Not here
+    ## Validate on the last computed model (Only used for final training)
     #print("Training complete, validating...")
     #vaError = model.computeError(datasets['validating'], True)
     #print("Validation error: ", vaError)

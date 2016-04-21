@@ -24,4 +24,4 @@ The structure of the project is as follow:
 * rntnmodel.py: our model with the gradient computation,...
 * tree.py: Contain the tree and node class which correspond to a sentence
 * vocabulary.py: Class which contain the dictionary of all the words
-* utils.py: some utilities fcts (ex sofmax, loadDataset,...) used by others
+* utils.py: some utilities fcts (ex softmax, loadDataset,...) used by others

@@ -139,7 +139,7 @@ class Model:
         
         return self._backpropagate(sample.root, None) # No incoming error for the root node (except the one coming from softmax)
     
-    def _backpropagate(self, node, sigmaCom):
+    def _backpropagate(self, node, sigmaDown):
         #node.printInd("Node:")
         #node.printInd("----------")
         
@@ -165,18 +165,14 @@ class Model:
         
         # Error coming through the softmax classifier (d*1 vector)
         sigmaSoft = np.dot(self.Ws.T, dE_dz) # WsT (t_i-y_i)
-        if sigmaCom is None: # Root node
-            sigmaCom = sigmaSoft # Only softmax error is incoming
-        else:
-            sigmaCom += sigmaSoft # Otherwise, we also add the incoming error from the upper node
-        
-        # If the node is a leaf, we do not go through the activation fct
         
         if node.word is None: # Intermediate node, we continue the backpropagation
             # Backpropagate through the activation function
-            # TODO: Check f'(sigS + sigD) or f'(sigS) + f'(sigD)
-            sigmaCom = np.multiply(sigmaCom, utils.actFctDerFromOutput(node.output)) # sigma .* f'(a_i) (WARNING: The node.output correspond to the output AFTER the activation fct, so we have f2'(f(a_i)))
-        
+            sigmaCom = np.multiply(sigmaSoft, utils.actFctDerFromOutput(node.output)) # Go through activavion fct: sigma .* f'(a_i) (WARNING: The node.output correspond to the output AFTER the activation fct, so we have f2'(f(a_i)))
+            if sigmaDown is not None: # Not root node
+                sigmaCom += np.multiply(sigmaDown, utils.actFctDerFromOutput(node.output)) # We also add the incoming error from the upper node
+            # Otherwise (root node), only softmax error is incoming
+
             # Construct the incoming output
             bc = np.concatenate((node.l.output, node.r.output)) # TODO: Right order ?
             
@@ -197,6 +193,12 @@ class Model:
             gradient += self._backpropagate(node.l, sigmaDown[0:d])
             gradient += self._backpropagate(node.r, sigmaDown[d:2*d]) # Sum all gradients
         else: # Leaf: Update L
+            # If the node is a leaf, we do not go through the activation fct
+            sigmaCom = sigmaSoft
+            if sigmaDown is not None: # Not root node
+                sigmaCom += sigmaDown # We also add the incoming error from the upper node
+            # Otherwise, only softmax error is incoming (case where the tree is a unique word)
+            
             # dL contain the list of all words which will be modified this pass
             gradient.dL = [ModelDl(node.word.idx, np.copy(sigmaCom))] # Copy probably useless, sigmaCom probably cannot be modified anymore on the other nodes so we could directly pass the reference
         

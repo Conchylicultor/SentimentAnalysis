@@ -65,7 +65,7 @@ def testCheckGradient():
     model = rntnmodel.Model(\
         randInitMaxValueNN = 2.0,  # Try bigger values for the initial values \
         #regularisationTerm = 0 # Check without regularisation \
-        regularisationTerm = 0.01 # Check gradient with regularisation \
+        regularisationTerm = 0.02 # Check gradient with regularisation \
         )
     
     # Compute the gradient using the direct formula
